@@ -262,6 +262,9 @@ func (p *Command) search(args []string) {
 	// res.Tracks.Tracks[0].Artists[0].Name
 	p.SetVar("spotify_search", tracks)
 	p.Command("lua require'nvim-spotify'.init()")
+	if err := p.Command("startinsert!"); err != nil {
+		log.Fatalf(err.Error())
+	}
 }
 
 func (p *Command) play(args []string) {
