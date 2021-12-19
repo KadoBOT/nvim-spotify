@@ -1,8 +1,8 @@
 build:
-	cp ./go/nvim-telescope /usr/local/bin
+	cp ./go/nvim-spotify /usr/local/bin
 
 gobuild:
-	cd ./go; go build -o ./nvim-telescope ./plugin
+	cd ./go; go build -o ./nvim-spotify ./plugin
 
 manifest:
 	nvim-spotify -manifest lspmeta
