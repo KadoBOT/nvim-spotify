@@ -122,7 +122,7 @@ func configAppRoutes(app *fiber.App) {
 
 func configServer(app *fiber.App) {
 	log.Println("creating server")
-	l, _ := os.Create("/tmp/telescope-spotify-server.log")
+	l, _ := os.Create("/tmp/nvim-spotify-server.log")
 	log.SetOutput(l)
 
 	log.Println("configuring logger")

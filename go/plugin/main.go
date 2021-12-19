@@ -286,7 +286,7 @@ func Register(p *plugin.Plugin) error {
 }
 
 func main() {
-	l, _ := os.Create("/tmp/telescope-spotify-plugin.log")
+	l, _ := os.Create("/tmp/nvim-spotify-plugin.log")
 	log.SetOutput(l)
 	defer l.Close()
 

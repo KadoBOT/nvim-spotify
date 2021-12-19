@@ -1,4 +1,4 @@
-module github.com/kadobot/telescope-spotify
+module github.com/kadobot/nvim-spotify
 
 go 1.17
 
@@ -6,7 +6,6 @@ require (
 	github.com/KadoBOT/spotify/v2 v2.0.3
 	github.com/gofiber/fiber/v2 v2.23.0
 	github.com/google/uuid v1.3.0
-	github.com/joho/godotenv v1.4.0
 	github.com/neovim/go-client v1.2.0
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 )
