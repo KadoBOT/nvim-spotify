@@ -25,6 +25,7 @@ type Command struct {
 }
 
 func (p *Command) call(url string) *http.Response {
+	log.Printf(url)
 	refreshToken := p.getRefreshToken()
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -50,6 +51,7 @@ func (p *Command) getRefreshToken() string {
 	if err := p.Nvim.Var("spotify_refresh_token", &refreshToken); err != nil {
 		log.Fatalf("cannot get refreshToken %s", err.Error())
 	}
+	log.Printf(refreshToken)
 	return refreshToken
 }
 
@@ -196,7 +198,7 @@ func (p *Command) getCurrentlyPlayingTrack() error {
 	}
 
 	if res.StatusCode != 200 {
-		log.Fatalf(string(body))
+		log.Fatalf(res.Status, string(body))
 		return err
 	}
 
@@ -226,7 +228,7 @@ func (p *Command) getCurrentlyPlayingTrack() error {
 		log.Println(playingName)
 
 		top_border := []byte("╭" + strings.Repeat("─", WIDTH-2) + "╮")
-		empty_line := []byte("│ 墳" + strings.Repeat(" ", (WIDTH-7-len(playingName))/2) + playingName + strings.Repeat(" ", (WIDTH-3-len(playingName))/2) + "│")
+		empty_line := []byte("│ 墳" + strings.Repeat(" ", (WIDTH-7-len(playingName))/2) + playingName + strings.Repeat(" ", (WIDTH-2-len(playingName))/2) + "│")
 		bot_border := []byte("╰" + strings.Repeat("─", WIDTH-2) + "╯")
 
 		replacement := [][]byte{top_border, empty_line, bot_border}
@@ -277,7 +279,7 @@ func (p *Command) getCurrentlyPlayingTrack() error {
 
 		if err := p.SetWindowOption(win, "winhl", "Normal:TelescopeBorder"); err != nil {
 			log.Fatalf(err.Error())
-			return err
+			// return err
 		}
 
 		if err := p.SetWindowOption(win, "winblend", 0); err != nil {
@@ -301,7 +303,15 @@ func (p *Command) setKeyMaps() {
 	keys := [][3]string{
 		{"n", "<Esc>", ":call SpotifyCloseWin()<CR>"},
 		{"n", "q", ":call SpotifyCloseWin()<CR>"},
-		{"i", "<CR>", "<esc>:call SpotifySearch()<CR>"},
+		{"i", "<CR>", "<esc>:call SpotifySearch('track')<CR>"},
+		{"i", "<C-T>", "<esc>:call SpotifySearch('track')<CR>"},
+		{"n", "<C-T>", "<esc>:call SpotifySearch('track')<CR>"},
+		{"i", "<C-R>", "<esc>:call SpotifySearch('artist')<CR>"},
+		{"n", "<C-R>", "<esc>:call SpotifySearch('artist')<CR>"},
+		{"i", "<C-L>", "<esc>:call SpotifySearch('album')<CR>"},
+		{"n", "<C-L>", "<esc>:call SpotifySearch('album')<CR>"},
+		{"i", "<C-P>", "<esc>:call SpotifySearch('playlist')<CR>"},
+		{"n", "<C-P>", "<esc>:call SpotifySearch('playlist')<CR>"},
 		{"", "<C-P>", ":call SpotifyPlay()<CR>"},
 	}
 
@@ -332,22 +342,18 @@ func (p *Command) closeWins() error {
 
 func (p *Command) search(args []string) {
 	log.Printf("starting search...")
-	var input string
-	if len(args) == 0 {
-		log.Printf("input is empty")
-		b, err := p.CurrentLine()
-		if err != nil {
-			log.Fatalf("Input cannot be empty")
-		}
-		input = string(b)
-	} else {
-		log.Println(args[0])
-		input = args[0]
+	searchType := args[0]
+	b, err := p.CurrentLine()
+	if err != nil {
+		log.Fatalf("Input cannot be empty")
 	}
+	input := string(b)
 	log.Printf("search input: %s", input)
+	log.Printf("search type: %s", searchType)
+	p.SetVar("spotify_type", searchType)
 	p.SetVar("spotify_title", input)
 
-	res := p.call(fmt.Sprintf("http://localhost:3000/search/tracks/%s", input))
+	res := p.call(fmt.Sprintf("http://localhost:3000/search/%s/%s", searchType, input))
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -359,20 +365,16 @@ func (p *Command) search(args []string) {
 		return
 	}
 
-	var tracks spotify.SearchResult
-	if err = json.Unmarshal(body, &tracks); err != nil {
+	var searchResult spotify.SearchResult
+	if err = json.Unmarshal(body, &searchResult); err != nil {
 		log.Fatalf(err.Error())
 	}
-	// res.Tracks.Tracks[0].Name
-	// res.Tracks.Tracks[0].Artists[0].Name
-	p.SetVar("spotify_search", tracks)
+	p.SetVar("spotify_search", searchResult)
 	p.Command("lua require'nvim-spotify'.init()")
-	if err := p.Command("startinsert!"); err != nil {
-		log.Fatalf(err.Error())
-	}
 }
 
 func (p *Command) play(args []string) {
+	p.call(fmt.Sprintf("http://localhost:3000/play/%s", args[0]))
 }
 
 func (p *Command) closeOpenWin(w *nvim.Window) {

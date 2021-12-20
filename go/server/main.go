@@ -25,7 +25,6 @@ var (
 	state  = uuid.New().String()
 	client = &spotify.Client{}
 	auth   = &spotifyauth.Authenticator{}
-	isAuth = false
 )
 
 func NewAuth() {
@@ -107,13 +106,21 @@ func configAppRoutes(app *fiber.App) {
 			searchType = spotify.SearchTypeTrack
 		}
 
-		res, err := client.Search(c.Context(), query, spotify.SearchType(searchType), spotify.Limit(limit))
+		res, err := client.Search(c.Context(), query, searchType, spotify.Limit(limit))
 		if err != nil {
 			c.Context().Error(err.Error(), fiber.StatusBadRequest)
 			return err
 		}
 
 		c.JSON(res)
+		return nil
+	}
+
+	play := func(c *fiber.Ctx) error {
+		uri := c.Params("uri")
+		client.PlayOpt(c.Context(), &spotify.PlayOptions{
+			PlaybackContext: (*spotify.URI)(&uri),
+		})
 		return nil
 	}
 
@@ -130,6 +137,7 @@ func configAppRoutes(app *fiber.App) {
 
 	app.Get("/search/:type/:query", search)
 	app.Get("/currently-playing", currentlyPlaying)
+	app.Get("/play/:uri", play)
 }
 
 func configServer(app *fiber.App) {
