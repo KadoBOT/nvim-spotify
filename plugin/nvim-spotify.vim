@@ -5,7 +5,8 @@ endif
 let g:loaded_nvim_spotify = 1
 
 function! s:RequireNvimSpotify(host) abort
-    return jobstart(['nvim-spotify'], {'rpc': v:true})
+    let binary_file = nvim_get_runtime_file('bin/NvimSpotify', v:false)[0]
+    return jobstart([binary_file], {'rpc': v:true})
 endfunction
 
 call remote#host#Register('nvim-spotify', 'x', function('s:RequireNvimSpotify'))

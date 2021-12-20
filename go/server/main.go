@@ -117,7 +117,19 @@ func configAppRoutes(app *fiber.App) {
 		return nil
 	}
 
+	currentlyPlaying := func(c *fiber.Ctx) error {
+		res, err := client.PlayerCurrentlyPlaying(c.Context())
+		if err != nil {
+			c.Context().Error(err.Error(), fiber.StatusBadRequest)
+			return err
+		}
+
+		c.JSON(res)
+		return nil
+	}
+
 	app.Get("/search/:type/:query", search)
+	app.Get("/currently-playing", currentlyPlaying)
 }
 
 func configServer(app *fiber.App) {

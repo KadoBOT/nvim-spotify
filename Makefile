@@ -1,12 +1,8 @@
 build:
-	cp ./go/nvim-spotify /usr/local/bin
-
-gobuild:
-	cd ./go; go build -o ./nvim-spotify ./plugin
+	cd ./go; go build -o ../bin/NvimSpotify ./plugin
 
 manifest:
-	nvim-spotify -manifest lspmeta
+	NvimSpotify -manifest lspmeta
 
 clean:
-	rm ./go/nvim-telescope
-	rm -rf /usr/local/bin/nvim-spotify
+	rm -rf bin/NvimSpotify

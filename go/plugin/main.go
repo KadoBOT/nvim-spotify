@@ -14,7 +14,7 @@ import (
 	"github.com/neovim/go-client/nvim/plugin"
 )
 
-const WIDTH = 50
+const WIDTH = 70
 const HEIGHT = 3
 
 type Command struct {
@@ -22,11 +22,6 @@ type Command struct {
 	*nvim.Buffer
 	wins  map[*nvim.Window]bool
 	input string
-}
-
-type bufLeaveEval struct {
-	BufNr int `eval:"bufnr('%')"`
-	WinID int `eval:"win_getid()"`
 }
 
 func (p *Command) call(url string) *http.Response {
@@ -66,7 +61,7 @@ func (p *Command) createPlaceholder() error {
 		return err
 	}
 
-	top_border := []byte("╭─ SpotifySearch " + strings.Repeat("─", WIDTH-18) + "╮")
+	top_border := []byte("╭" + strings.Repeat("─", (WIDTH-17)/2) + " SpotifySearch " + strings.Repeat("─", (WIDTH-16)/2) + "╮")
 	empty_line := []byte("│ › " + strings.Repeat(" ", WIDTH-5) + "│")
 	bot_border := []byte("╰" + strings.Repeat("─", WIDTH-2) + "╯")
 
@@ -82,7 +77,7 @@ func (p *Command) createPlaceholder() error {
 		Anchor:    "NW",
 		Width:     WIDTH,
 		Height:    HEIGHT,
-		Row:       (float64(uis[0].Height) / 2) - (float64(HEIGHT) / 2),
+		Row:       (float64(uis[0].Height) / 2) - (float64(HEIGHT) / 2) - 2,
 		Col:       (float64(uis[0].Width) / 2) - (float64(WIDTH) / 2),
 		Style:     "minimal",
 		ZIndex:    1,
@@ -151,7 +146,7 @@ func (p *Command) createInput() {
 		Relative:  "editor",
 		Width:     WIDTH - 7,
 		Height:    1,
-		Row:       (float64(uis[0].Height) / 2) - (float64(HEIGHT) / 2) + 1,
+		Row:       (float64(uis[0].Height) / 2) - (float64(HEIGHT) / 2) - 1,
 		Col:       (float64(uis[0].Width) / 2) - (float64(WIDTH) / 2) + 4,
 		Style:     "minimal",
 		ZIndex:    3,
@@ -192,6 +187,115 @@ func (p *Command) createInput() {
 	p.Command("autocmd BufLeave <buffer> ++nested ++once :silent call SpotifyCloseWin()")
 }
 
+func (p *Command) getCurrentlyPlayingTrack() error {
+	res := p.call("http://localhost:3000/currently-playing")
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	if res.StatusCode != 200 {
+		log.Fatalf(string(body))
+		return err
+	}
+
+	var currentlyPlaying spotify.CurrentlyPlaying
+	if err = json.Unmarshal(body, &currentlyPlaying); err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	if currentlyPlaying.Playing {
+		log.Printf("Creating CurrentlyPlaying")
+		buf, err := p.CreateBuffer(false, true)
+		if err != nil {
+			log.Fatalf(err.Error())
+			return err
+		}
+		var artists string
+		for i, artist := range currentlyPlaying.Item.Artists {
+			if i == 0 {
+				artists += artist.Name
+			} else if i == len(currentlyPlaying.Item.Artists)-1 {
+				artists += " and " + artist.Name
+			} else {
+				artists += ", " + artist.Name
+			}
+		}
+		playingName := currentlyPlaying.Item.Name + " by " + artists
+		log.Println(playingName)
+
+		top_border := []byte("╭" + strings.Repeat("─", WIDTH-2) + "╮")
+		empty_line := []byte("│ 墳" + strings.Repeat(" ", (WIDTH-7-len(playingName))/2) + playingName + strings.Repeat(" ", (WIDTH-3-len(playingName))/2) + "│")
+		bot_border := []byte("╰" + strings.Repeat("─", WIDTH-2) + "╯")
+
+		replacement := [][]byte{top_border, empty_line, bot_border}
+		uis, err := p.UIs()
+		if err != nil {
+			log.Fatalf(err.Error())
+			return err
+		}
+
+		opts := nvim.WindowConfig{
+			Relative:  "editor",
+			Anchor:    "NW",
+			Width:     WIDTH,
+			Height:    HEIGHT,
+			Row:       (float64(uis[0].Height) / 2) - (float64(HEIGHT) / 2) + 1,
+			Col:       (float64(uis[0].Width) / 2) - (float64(WIDTH) / 2),
+			Style:     "minimal",
+			ZIndex:    1,
+			Focusable: false,
+		}
+
+		if err := p.SetBufferLines(buf, 0, -1, true, replacement); err != nil {
+			log.Fatalf(err.Error())
+			return err
+		}
+
+		if err := p.SetBufferOption(buf, "modifiable", false); err != nil {
+			log.Fatalf(err.Error())
+			return err
+		}
+
+		if err := p.SetBufferOption(buf, "bufhidden", "wipe"); err != nil {
+			log.Fatalf(err.Error())
+			return err
+		}
+
+		if err := p.SetBufferOption(buf, "buftype", "nofile"); err != nil {
+			log.Fatalf(err.Error())
+			return err
+		}
+
+		win, err := p.OpenWindow(buf, false, &opts)
+		if err != nil {
+			log.Fatalf(err.Error())
+			return err
+		}
+		p.wins[&win] = true
+
+		if err := p.SetWindowOption(win, "winhl", "Normal:TelescopeBorder"); err != nil {
+			log.Fatalf(err.Error())
+			return err
+		}
+
+		if err := p.SetWindowOption(win, "winblend", 0); err != nil {
+			log.Fatalf(err.Error())
+			return err
+		}
+
+		if err := p.SetWindowOption(win, "foldlevel", 100); err != nil {
+			log.Fatalf(err.Error())
+			return err
+		}
+
+		return nil
+	}
+
+	return nil
+}
+
 func (p *Command) setKeyMaps() {
 	log.Printf("Setting Keymaps")
 	keys := [][3]string{
@@ -210,6 +314,7 @@ func (p *Command) setKeyMaps() {
 func (p *Command) configPlugin() {
 	log.Printf("Configuring Plugin")
 	p.createPlaceholder()
+	p.getCurrentlyPlayingTrack()
 	p.createInput()
 	p.setKeyMaps()
 }
