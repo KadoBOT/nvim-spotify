@@ -212,7 +212,7 @@ func (p *Command) createInput() {
 	}
 	p.wins[&win] = true
 
-	if err := p.SetWindowOption(win, "winhl", "Normal:TelescopeNormal"); err != nil {
+	if err := p.SetWindowOption(win, "winhl", "Normal:SpotifyText"); err != nil {
 		log.Fatalf(err.Error())
 	}
 
@@ -435,7 +435,9 @@ func (p *Command) setKeyMaps() {
 		{"n", "q", ":call SpotifyCloseWin()<CR>"},
 		{"i", "<CR>", "<esc>:call SpotifySearch('track')<CR>:startinsert<CR>"},
 		{"i", "<C-N>", "<esc>:call SpotifyDevices('next')<CR>:startinsert<CR>"},
+		{"i", "<Tab>", "<esc>:call SpotifyDevices('next')<CR>:startinsert<CR>"},
 		{"n", "<C-N>", ":call SpotifyDevices('next')<CR>"},
+		{"n", "<Tab>", ":call SpotifyDevices('next')<CR>"},
 		{"i", "<C-P>", "<esc>:call SpotifyDevices('prev')<CR>:startinsert<CR>"},
 		{"n", "<C-P>", ":call SpotifyDevices('prev')<CR>"},
 		{"i", "<C-T>", "<esc>:call SpotifySearch('track')<CR>:startinsert<CR>"},
@@ -458,6 +460,7 @@ func (p *Command) configPlugin() {
 	log.Printf("Configuring Plugin")
 
 	p.Command(`hi SpotifyBorder guifg=#1db954`)
+	p.Command(`hi SpotifyText guifg=#1ed760`)
 	p.Command(`hi SpotifySelection guifg=#191414 guibg=#1ed760`)
 
 	p.createAnchor()
@@ -516,14 +519,19 @@ func (p *Command) play(args []string) {
 	p.call(fmt.Sprintf("http://localhost:3000/play/%s/%s", args[0], p.devices[p.selected].ID.String()))
 }
 
+func (p *Command) playback(args []string) {
+	switch args[0] {
+	case "next":
+		p.call("http://localhost:3000/skip")
+	case "pause":
+		p.call("http://localhost:3000/pause")
+	}
+}
+
 func (p *Command) deviceSwitch(args []string) {
 	selected := p.selected
 	if args[0] == "next" {
 		selected = (p.selected + 1) % len(p.devices)
-	}
-
-	if args[0] == "prev" {
-		selected = (p.selected - 1) % len(p.devices)
 	}
 
 	p.setDevicesHighlight(int(math.Abs(float64(selected))))
@@ -544,6 +552,7 @@ func Register(p *plugin.Plugin) error {
 	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifySearch"}, c.search)
 	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifyPlay"}, c.play)
 	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifyDevices"}, c.deviceSwitch)
+	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifyPlayback"}, c.playback)
 
 	return nil
 }
