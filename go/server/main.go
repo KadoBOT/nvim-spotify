@@ -118,9 +118,18 @@ func configAppRoutes(app *fiber.App) {
 
 	play := func(c *fiber.Ctx) error {
 		uri := c.Params("uri")
-		client.PlayOpt(c.Context(), &spotify.PlayOptions{
-			PlaybackContext: (*spotify.URI)(&uri),
-		})
+		id := c.Params("id")
+		if strings.Contains(uri, "track") {
+			client.PlayOpt(c.Context(), &spotify.PlayOptions{
+				URIs:     []spotify.URI{spotify.URI(uri)},
+				DeviceID: (*spotify.ID)(&id),
+			})
+		} else {
+			client.PlayOpt(c.Context(), &spotify.PlayOptions{
+				PlaybackContext: (*spotify.URI)(&uri),
+				DeviceID:        (*spotify.ID)(&id),
+			})
+		}
 		return nil
 	}
 
@@ -135,9 +144,21 @@ func configAppRoutes(app *fiber.App) {
 		return nil
 	}
 
+	devices := func(c *fiber.Ctx) error {
+		res, err := client.PlayerDevices(c.Context())
+		if err != nil {
+			c.Context().Error(err.Error(), fiber.StatusBadRequest)
+			return err
+		}
+
+		c.JSON(res)
+		return nil
+	}
+
 	app.Get("/search/:type/:query", search)
 	app.Get("/currently-playing", currentlyPlaying)
-	app.Get("/play/:uri", play)
+	app.Get("/play/:uri/:id", play)
+	app.Get("/devices", devices)
 }
 
 func configServer(app *fiber.App) {
