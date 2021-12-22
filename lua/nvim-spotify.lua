@@ -120,5 +120,8 @@ end
 return {
     init = function ()
         spotify(require'telescope.themes'.get_dropdown{})
+    end,
+    setup = function (opts)
+        vim.g.spotify_refresh_token = opts.refresh_token
     end
 }
