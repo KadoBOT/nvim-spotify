@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/KadoBOT/spotify/v2"
 	"github.com/neovim/go-client/nvim"
@@ -28,6 +29,13 @@ type Command struct {
 	devicesBuf *nvim.Buffer
 	selected   int
 	nsID       int
+}
+
+func safeString(str string) string {
+	if len(str) > WIDTH-10 {
+		return str[0:WIDTH-10] + "..."
+	}
+	return str
 }
 
 func (p *Command) call(url string) *http.Response {
@@ -88,25 +96,10 @@ func (p *Command) createPlaceholder() error {
 		Focusable: false,
 	}
 
-	if err := p.SetBufferLines(buf, 0, -1, true, replacement); err != nil {
-		log.Fatalf(err.Error())
-		return err
-	}
-
-	if err := p.SetBufferOption(buf, "modifiable", false); err != nil {
-		log.Fatalf(err.Error())
-		return err
-	}
-
-	if err := p.SetBufferOption(buf, "bufhidden", "wipe"); err != nil {
-		log.Fatalf(err.Error())
-		return err
-	}
-
-	if err := p.SetBufferOption(buf, "buftype", "nofile"); err != nil {
-		log.Fatalf(err.Error())
-		return err
-	}
+	p.SetBufferLines(buf, 0, -1, true, replacement)
+	p.SetBufferOption(buf, "modifiable", false)
+	p.SetBufferOption(buf, "bufhidden", "wipe")
+	p.SetBufferOption(buf, "buftype", "nofile")
 
 	win, err := p.OpenWindow(buf, false, &opts)
 	if err != nil {
@@ -115,20 +108,9 @@ func (p *Command) createPlaceholder() error {
 	}
 	p.wins[&win] = true
 
-	if err := p.SetWindowOption(win, "winhl", "Normal:SpotifyBorder"); err != nil {
-		log.Fatalf(err.Error())
-		return err
-	}
-
-	if err := p.SetWindowOption(win, "winblend", 0); err != nil {
-		log.Fatalf(err.Error())
-		return err
-	}
-
-	if err := p.SetWindowOption(win, "foldlevel", 100); err != nil {
-		log.Fatalf(err.Error())
-		return err
-	}
+	p.SetWindowOption(win, "winhl", "Normal:SpotifyBorder")
+	p.SetWindowOption(win, "winblend", 0)
+	p.SetWindowOption(win, "foldlevel", 100)
 
 	return nil
 }
@@ -157,18 +139,14 @@ func (p *Command) createAnchor() {
 		Focusable: false,
 	}
 
-	if err := p.SetBufferOption(buf, "bufhidden", "wipe"); err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	if err := p.SetBufferOption(buf, "buftype", "nofile"); err != nil {
-		log.Fatalf(err.Error())
-	}
+	p.SetBufferOption(buf, "bufhidden", "wipe")
+	p.SetBufferOption(buf, "buftype", "nofile")
 
 	win, err := p.OpenWindow(buf, false, &opts)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+
 	p.anchor = &win
 	p.wins[&win] = true
 }
@@ -194,17 +172,9 @@ func (p *Command) createInput() {
 		Focusable: true,
 	}
 
-	if err := p.Command("startinsert!"); err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	if err := p.SetBufferOption(buf, "bufhidden", "wipe"); err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	if err := p.SetBufferOption(buf, "buftype", "nofile"); err != nil {
-		log.Fatalf(err.Error())
-	}
+	p.Command("startinsert!")
+	p.SetBufferOption(buf, "bufhidden", "wipe")
+	p.SetBufferOption(buf, "buftype", "nofile")
 
 	win, err := p.OpenWindow(buf, true, &opts)
 	if err != nil {
@@ -212,17 +182,9 @@ func (p *Command) createInput() {
 	}
 	p.wins[&win] = true
 
-	if err := p.SetWindowOption(win, "winhl", "Normal:SpotifyText"); err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	if err := p.SetWindowOption(win, "winblend", 0); err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	if err := p.SetWindowOption(win, "foldlevel", 100); err != nil {
-		log.Fatalf(err.Error())
-	}
+	p.SetWindowOption(win, "winhl", "Normal:SpotifyText")
+	p.SetWindowOption(win, "winblend", 0)
+	p.SetWindowOption(win, "foldlevel", 100)
 
 	p.Command("autocmd QuitPre <buffer> ++nested ++once :silent call SpotifyCloseWin()")
 	p.Command("autocmd BufLeave <buffer> ++nested ++once :silent call SpotifyCloseWin()")
@@ -260,10 +222,10 @@ func (p *Command) getDevices() error {
 			emptyAmount := (WIDTH - 5 - len(device.Name))
 
 			if i == p.selected {
-				line := []byte("│ ▶ " + device.Name + strings.Repeat(" ", emptyAmount) + "│")
+				line := []byte("│ ▶ " + safeString(device.Name) + strings.Repeat(" ", emptyAmount) + "│")
 				replacement = append(replacement, line)
 			} else {
-				line := []byte("│   " + device.Name + strings.Repeat(" ", emptyAmount) + "│")
+				line := []byte("│   " + safeString(device.Name) + strings.Repeat(" ", emptyAmount) + "│")
 				replacement = append(replacement, line)
 			}
 		}
@@ -285,7 +247,6 @@ func (p *Command) getDevices() error {
 		}
 
 		p.SetBufferLines(buf, 0, -1, false, replacement)
-
 		p.SetBufferOption(buf, "bufhidden", "wipe")
 		p.SetBufferOption(buf, "buftype", "nofile")
 
@@ -297,9 +258,7 @@ func (p *Command) getDevices() error {
 		p.wins[&win] = true
 
 		p.SetWindowOption(win, "winhl", "Normal:SpotifyBorder")
-
 		p.setDevicesHighlight(0)
-
 		p.SetBufferOption(buf, "modifiable", false)
 
 		return nil
@@ -313,13 +272,9 @@ func (p *Command) setDevicesHighlight(selected int) {
 	p.SetBufferOption(*p.devicesBuf, "modifiable", true)
 	p.Nvim.ClearBufferNamespace(*p.devicesBuf, p.nsID, 0, -1)
 	p.Nvim.SetBufferText(*p.devicesBuf, p.selected+1, 4, p.selected+1, 7, [][]byte{[]byte(" ")})
-	log.Println("set buf text")
 	p.selected = selected
-	log.Println("selected", p.selected)
 	p.Nvim.AddBufferHighlight(*p.devicesBuf, p.nsID, "SpotifySelection", p.selected+1, 3, WIDTH+3)
-	log.Println("added highlight")
 	p.Nvim.SetBufferText(*p.devicesBuf, p.selected+1, 4, p.selected+1, 5, [][]byte{[]byte("▶")})
-	log.Println("set text")
 	p.SetBufferOption(*p.devicesBuf, "modifiable", false)
 }
 
@@ -358,11 +313,12 @@ func (p *Command) getCurrentlyPlayingTrack() error {
 				artists += ", " + artist.Name
 			}
 		}
-		playingName := currentlyPlaying.Item.Name + " by " + artists
+		playingName := safeString(currentlyPlaying.Item.Name + " by " + artists)
+
 		log.Println(playingName)
 
-		top_border := []byte("╭" + strings.Repeat("─", WIDTH-2) + "╮")
-		empty_line := []byte("│ 墳" + strings.Repeat(" ", (WIDTH-7-len(playingName))/2) + playingName + strings.Repeat(" ", (WIDTH-2-len(playingName))/2) + "│")
+		top_border := []byte("╭" + strings.Repeat("─", (WIDTH-19)/2) + " Currently Playing " + strings.Repeat("─", (WIDTH-21)/2) + "╮")
+		empty_line := []byte("│ 墳" + strings.Repeat(" ", WIDTH-5) + "│")
 		bot_border := []byte("╰" + strings.Repeat("─", WIDTH-2) + "╯")
 
 		replacement := [][]byte{top_border, empty_line, bot_border}
@@ -385,20 +341,10 @@ func (p *Command) getCurrentlyPlayingTrack() error {
 			return err
 		}
 
-		if err := p.SetBufferOption(buf, "modifiable", false); err != nil {
-			log.Fatalf(err.Error())
-			return err
-		}
-
-		if err := p.SetBufferOption(buf, "bufhidden", "wipe"); err != nil {
-			log.Fatalf(err.Error())
-			return err
-		}
-
-		if err := p.SetBufferOption(buf, "buftype", "nofile"); err != nil {
-			log.Fatalf(err.Error())
-			return err
-		}
+		p.SetBufferText(buf, 1, 7, 1, utf8.RuneCountInString(playingName)+7, [][]byte{[]byte(playingName)})
+		p.SetBufferOption(buf, "modifiable", false)
+		p.SetBufferOption(buf, "bufhidden", "wipe")
+		p.SetBufferOption(buf, "buftype", "nofile")
 
 		win, err := p.OpenWindow(buf, false, &opts)
 		if err != nil {
@@ -407,20 +353,9 @@ func (p *Command) getCurrentlyPlayingTrack() error {
 		}
 		p.wins[&win] = true
 
-		if err := p.SetWindowOption(win, "winhl", "Normal:SpotifyBorder"); err != nil {
-			log.Fatalf(err.Error())
-			// return err
-		}
-
-		if err := p.SetWindowOption(win, "winblend", 0); err != nil {
-			log.Fatalf(err.Error())
-			return err
-		}
-
-		if err := p.SetWindowOption(win, "foldlevel", 100); err != nil {
-			log.Fatalf(err.Error())
-			return err
-		}
+		p.SetWindowOption(win, "winhl", "Normal:SpotifyBorder")
+		p.SetWindowOption(win, "winblend", 0)
+		p.SetWindowOption(win, "foldlevel", 100)
 
 		return nil
 	}
@@ -430,24 +365,27 @@ func (p *Command) getCurrentlyPlayingTrack() error {
 
 func (p *Command) setKeyMaps() {
 	log.Printf("Setting Keymaps")
+
 	keys := [][3]string{
 		{"n", "<Esc>", ":call SpotifyCloseWin()<CR>"},
 		{"n", "q", ":call SpotifyCloseWin()<CR>"},
-		{"i", "<CR>", "<esc>:call SpotifySearch('track')<CR>:startinsert<CR>"},
-		{"i", "<C-N>", "<esc>:call SpotifyDevices('next')<CR>:startinsert<CR>"},
-		{"i", "<Tab>", "<esc>:call SpotifyDevices('next')<CR>:startinsert<CR>"},
 		{"n", "<C-N>", ":call SpotifyDevices('next')<CR>"},
 		{"n", "<Tab>", ":call SpotifyDevices('next')<CR>"},
-		{"i", "<C-P>", "<esc>:call SpotifyDevices('prev')<CR>:startinsert<CR>"},
+		{"n", "<S-Tab>", ":call SpotifyDevices('prev')<CR>"},
 		{"n", "<C-P>", ":call SpotifyDevices('prev')<CR>"},
-		{"i", "<C-T>", "<esc>:call SpotifySearch('track')<CR>:startinsert<CR>"},
 		{"n", "<C-T>", ":call SpotifySearch('track')<CR>"},
-		{"i", "<C-R>", "<esc>:call SpotifySearch('artist')<CR>:startinsert<CR>"},
 		{"n", "<C-R>", ":call SpotifySearch('artist')<CR>"},
-		{"i", "<C-L>", "<esc>:call SpotifySearch('album')<CR>:startinsert<CR>"},
 		{"n", "<C-L>", ":call SpotifySearch('album')<CR>"},
-		{"i", "<C-Y>", "<esc>:call SpotifySearch('playlist')<CR>:startinsert<CR>"},
 		{"n", "<C-Y>", ":call SpotifySearch('playlist')<CR>"},
+		{"i", "<CR>", "<C-O>:call SpotifySearch('track')<CR>"},
+		{"i", "<C-N>", "<C-O>:call SpotifyDevices('next')<CR>"},
+		{"i", "<Tab>", "<C-O>:call SpotifyDevices('next')<CR>"},
+		{"i", "<C-P>", "<C-O>:call SpotifyDevices('prev')<CR>"},
+		{"i", "<S-Tab>", "<C-O>:call SpotifyDevices('prev')<CR>"},
+		{"i", "<C-T>", "<C-O>:call SpotifySearch('track')<CR>"},
+		{"i", "<C-R>", "<C-O>:call SpotifySearch('artist')<CR>"},
+		{"i", "<C-L>", "<C-O>:call SpotifySearch('album')<CR>"},
+		{"i", "<C-Y>", "<C-O>:call SpotifySearch('playlist')<CR>"},
 	}
 
 	opts := map[string]bool{"noremap": true, "silent": true, "nowait": true}
@@ -490,8 +428,7 @@ func (p *Command) search(args []string) {
 		log.Fatalf("Input cannot be empty")
 	}
 	input := string(b)
-	log.Printf("search input: %s", input)
-	log.Printf("search type: %s", searchType)
+
 	p.SetVar("spotify_type", searchType)
 	p.SetVar("spotify_title", input)
 
@@ -528,6 +465,10 @@ func (p *Command) playback(args []string) {
 	}
 }
 
+func (p *Command) save() {
+	p.call("http://localhost:3000/save")
+}
+
 func (p *Command) deviceSwitch(args []string) {
 	selected := p.selected
 	if args[0] == "next" {
@@ -553,6 +494,7 @@ func Register(p *plugin.Plugin) error {
 	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifyPlay"}, c.play)
 	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifyDevices"}, c.deviceSwitch)
 	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifyPlayback"}, c.playback)
+	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifySave"}, c.save)
 
 	return nil
 }

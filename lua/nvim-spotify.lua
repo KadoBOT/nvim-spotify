@@ -117,11 +117,21 @@ local spotify = function (opts)
     }):find()
 end
 
-return {
-    init = function ()
-        spotify(require'telescope.themes'.get_dropdown{})
-    end,
-    setup = function (opts)
-        vim.g.spotify_refresh_token = opts.refresh_token
-    end
-}
+
+local M = {}
+
+M.namespace = 'Spotify'
+
+function M.setup(opts)
+    vim.g.spotify_refresh_token = opts.refresh_token
+
+	vim.api.nvim_set_keymap("n", "<Plug>(SpotifySkip)", ":<c-u>call SpotifyPlayback('next')<CR>", { silent = true })
+	vim.api.nvim_set_keymap("n", "<Plug>(SpotifyPause)", ":<c-u>call SpotifyPlayback('pause')<CR>", { silent = true })
+	vim.api.nvim_set_keymap("n", "<Plug>(SpotifySave)", ":<c-u>call SpotifySave()<CR>", { silent = true })
+end
+
+function M.init()
+    spotify(require'telescope.themes'.get_dropdown{})
+end
+
+return M

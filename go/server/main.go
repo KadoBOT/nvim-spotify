@@ -174,12 +174,27 @@ func configAppRoutes(app *fiber.App) {
 		return nil
 	}
 
+	save := func(c *fiber.Ctx) error {
+		res, err := client.PlayerCurrentlyPlaying(c.Context())
+
+		if err != nil {
+			c.Context().Error(err.Error(), fiber.StatusBadRequest)
+			return err
+		}
+
+		if res.Playing {
+			client.AddTracksToLibrary(c.Context(), res.Item.ID)
+		}
+		return nil
+	}
+
 	app.Get("/search/:type/:query", search)
 	app.Get("/currently-playing", currentlyPlaying)
 	app.Get("/play/:uri/:id", play)
 	app.Get("/devices", devices)
 	app.Get("/pause", pause)
 	app.Get("/skip", skip)
+	app.Get("/save", save)
 }
 
 func configServer(app *fiber.App) {
