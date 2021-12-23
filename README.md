@@ -7,7 +7,7 @@ For productivity addicts who enjoys coding while listening to Spotify, but hates
 ## Features
 
 - Display search results on telescope
-![telescope results](./screenshots/track.png)
+![telescope results](./screenshots/tracks.png)
 - Pause/Resume a track
 - Skip a track
 - Add a track to the library
