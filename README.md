@@ -7,16 +7,17 @@ For productivity addicts who enjoys coding while listening to Spotify, but hates
 ## Features
 
 - Display search results on telescope
+![telescope results](./screenshots/tracks.png)
 - Pause/Resume a track
 - Skip a track
 - Add a track to the library
 - Display the name of what's being played
 - Select which device to play on
 - Search by:
-  - Track
-  - Album
-  - Playlist
-  - Artist
+  - Track (`<C-T> or CR`)
+  - Album (`<C-L>`)
+  - Playlist (`<C-Y>`)
+  - Artist (`<C-R>`)
 
 ## Requirements
 
