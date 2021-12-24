@@ -85,3 +85,7 @@ vim.api.nvim_set_keymap("n", "<leader>ss", "<Plug>(SpotifySave)",  { silent = tr
 vim.api.nvim_set_keymap("n", "<leader>so", ":Spotify<CR>",  { silent = true }) -- Open Spotify plugin window
 ```
 
+## Sponsoring
+
+As you might have noticed, I'm hosting the server for handling all the requests on GCP, so you don't have to run it on your machine. While a single request is not expensive, a single user makes 5 requests every time it opens the plugin and run a search. With the increasing amount of users using this plugin, this might get more expensive. With that said, please consider sponsoring me. Thanks!
+
