@@ -476,6 +476,10 @@ func (p *Command) deviceSwitch(args []string) {
 		selected = (p.selected + 1) % len(p.devices)
 	}
 
+	if args[0] == "prev" {
+		selected = (p.selected - 1) % len(p.devices)
+	}
+
 	p.setDevicesHighlight(int(math.Abs(float64(selected))))
 }
 
