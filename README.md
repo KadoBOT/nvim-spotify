@@ -1,13 +1,12 @@
 # 🎵nvim-spotify
 
 For productivity addicts who enjoys coding while listening to Spotify, but hates switching to the app to control the music.
-
-![nvim-spotify Screeshot](./screenshots/main.png)
+![plugin screeshot](https://user-images.githubusercontent.com/11719845/147326681-0dd30d2e-b510-4c1c-b102-1176cc7417b2.png)
 
 ## Features
 
-- Display search results on telescope
-![telescope results](./screenshots/tracks.png)
+- Telescope to display the search results
+![image](https://user-images.githubusercontent.com/11719845/147326748-9c7b67ae-2582-47f4-b230-ca0f5abd853d.png)
 - Pause/Resume a track
 - Skip a track
 - Add a track to the library
