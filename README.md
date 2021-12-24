@@ -35,7 +35,7 @@ A refresh token. You need to authorize  the `nvim-spotify` app through [this lin
 use {
     'KadoBOT/nvim-spotify', 
     requires = 'nvim-telescope/telescope.nvim',
-    config = function(),
+    config = function()
         local spotify = require'nvim-spotify'
 
         spotify.setup {
