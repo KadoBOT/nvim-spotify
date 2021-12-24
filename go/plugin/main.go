@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"unicode/utf8"
@@ -191,7 +192,7 @@ func (p *Command) createInput() {
 }
 
 func (p *Command) getDevices() error {
-	res := p.call("http://localhost:3000/devices")
+	res := p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/devices-d76dbb1")
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -279,7 +280,7 @@ func (p *Command) setDevicesHighlight(selected int) {
 }
 
 func (p *Command) getCurrentlyPlayingTrack() error {
-	res := p.call("http://localhost:3000/currently-playing")
+	res := p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/cur_play-9dc7855")
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -432,7 +433,7 @@ func (p *Command) search(args []string) {
 	p.SetVar("spotify_type", searchType)
 	p.SetVar("spotify_title", input)
 
-	res := p.call(fmt.Sprintf("http://localhost:3000/search/%s/%s", searchType, input))
+	res := p.call(fmt.Sprintf("https://europe-west3-nvim-spotify.cloudfunctions.net/search-8821b6b?type=%s&query=%s", url.QueryEscape(searchType), url.QueryEscape(input)))
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -453,20 +454,20 @@ func (p *Command) search(args []string) {
 }
 
 func (p *Command) play(args []string) {
-	p.call(fmt.Sprintf("http://localhost:3000/play/%s/%s", args[0], p.devices[p.selected].ID.String()))
+	p.call(fmt.Sprintf("https://europe-west3-nvim-spotify.cloudfunctions.net/play-7613342?uri=%s&id=%s", url.QueryEscape(args[0]), url.QueryEscape(p.devices[p.selected].ID.String())))
 }
 
 func (p *Command) playback(args []string) {
 	switch args[0] {
 	case "next":
-		p.call("http://localhost:3000/skip")
+		p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/skip-09d0606")
 	case "pause":
-		p.call("http://localhost:3000/pause")
+		p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/pause-98016ef")
 	}
 }
 
 func (p *Command) save() {
-	p.call("http://localhost:3000/save")
+	p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/save-9067f22")
 }
 
 func (p *Command) deviceSwitch(args []string) {
