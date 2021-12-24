@@ -1,12 +1,12 @@
 # 🎵nvim-spotify
 
 For productivity addicts who enjoys coding while listening to Spotify, but hates switching to the app to control the music.
-![plugin screeshot](https://user-images.githubusercontent.com/11719845/147326681-0dd30d2e-b510-4c1c-b102-1176cc7417b2.png)
+![image](https://user-images.githubusercontent.com/11719845/147326897-fe7c7485-0e6a-4ba9-8698-781256be2dea.png)
 
 ## Features
 
 - Telescope to display the search results
-![image](https://user-images.githubusercontent.com/11719845/147326748-9c7b67ae-2582-47f4-b230-ca0f5abd853d.png)
+![image](https://user-images.githubusercontent.com/11719845/147326933-6f86ec02-eb32-4501-a719-ea988225e2db.png)
 - Pause/Resume a track
 - Skip a track
 - Add a track to the library
@@ -21,6 +21,8 @@ For productivity addicts who enjoys coding while listening to Spotify, but hates
 ## Requirements
 
 > Unlike other Spotify plugins, you don't need to create an app, and no server is needed on your machine. Although, you still need to authorize this plugin, so it can control your music.
+
+A refresh token. You need to authorize  the `nvim-spotify` app through [this link](https://europe-west3-nvim-spotify.cloudfunctions.net/login-4b8c731) and add the refresh_token that is returned to the plugin configuration.
 
 - Golang
 - Telescope
@@ -46,7 +48,7 @@ use {
 
 ## Configuration
 
-A valid refresh_token is required for this plugin to work.
+A valid refresh_token is required for this plugin to work. You can retrieve yours after authorizing the app [using this link](https://europe-west3-nvim-spotify.cloudfunctions.net/login-4b8c731)
 
 ## Usage
 
