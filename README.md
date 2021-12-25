@@ -46,6 +46,12 @@ use {
 }
 ```
 
+### [vim-plug](https://github.com/junegunn/vim-plug)
+```viml
+Plug 'KadoBOT/nvim-spotify', { 'do': 'make' }
+```
+
+
 ## Configuration
 
 A valid refresh_token is required for this plugin to work. You can retrieve yours after authorizing the app [using this link](https://europe-west3-nvim-spotify.cloudfunctions.net/login-4b8c731)
