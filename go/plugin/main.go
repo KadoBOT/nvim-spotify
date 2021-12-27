@@ -350,7 +350,7 @@ func (p *Command) search(args []string) {
 func (p *Command) play(args []string) {
 	var selected []string
 	p.Var("spotify_device", &selected)
-	if selected[0] != "" {
+	if len(selected) != 0 {
 		execCommand("spt", "play", "-u", args[0], "-d", selected[0])
 	} else {
 		execCommand("spt", "play", "-u", args[0])
@@ -391,12 +391,9 @@ func Register(p *plugin.Plugin) error {
 	return nil
 }
 
-func init() {
+func main() {
 	l, _ := os.Create("/tmp/nvim-spotify-plugin.log")
 	log.SetOutput(l)
 	defer l.Close()
-}
-
-func main() {
 	plugin.Main(Register)
 }

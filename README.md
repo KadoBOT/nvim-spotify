@@ -1,13 +1,13 @@
 # 🎵nvim-spotify
 
-For productivity addicts who enjoys coding while listening to Spotify, and cannot lose their focus, switching to the app to control their music.
+For productivity addicts who enjoy coding while listening to Spotify, and cannot lose their focus switching to the app to control their music.
 
 `nvim-spotify` requires [spotify-tui](https://github.com/Rigellute/spotify-tui)
 
 ## Features
 
 - Display/Filter the search results with Telescope
-- Currently playing status line.
+- Currently playing statusline.
 - Pause/Resume a track
 - Skip a track
 - Add a track to the library
@@ -41,7 +41,7 @@ use {
         spotify.setup {
             -- default opts
             status = {
-                update_interval = 10000, -- the interval (ms) to check for what's currently played
+                update_interval = 10000, -- the interval (ms) to check for what's currently playing
                 format = '%s %t by %a' -- spotify-tui --format argument
             }
         }
@@ -50,11 +50,15 @@ use {
 }
 ```
 
-### Notes
-Decreasing the `update_interval` value means more API calls in a shorter period of time. Because of the Spotify API rate limiter, setting this too low can block future requests.
-Besides that, those constant updates can make your computer slow. 
-**So bear this in mind when changing this value.*****
+### [vim-plug](https://github.com/junegunn/vim-plug)
+```viml
+Plug 'KadoBOT/nvim-spotify', { 'do': 'make' }
+```
 
+#### Notes
+Decreasing the `update_interval` value means more API calls in a shorter period. Because of the Spotify API rate limiter, setting this too low can block future requests.
+Besides that, those constant updates can make your computer slow. 
+**So bear this in mind when changing this value.**
 
 ## Usage
 `nvim-spotify` has two commands:
@@ -74,7 +78,7 @@ Spotify Search input. Check the keymaps below for Search shortcuts.
 ### Default keymaps:
 The following keymaps are set by default when the Spotify search input is open:
 | mode | key | Description |
----
+|---|---|---|
 | normal | Esc | Close
 | normal | q | Close
 | normal, insert | C-T | Search for Tracks
