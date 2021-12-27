@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -38,23 +37,6 @@ func execCommand(name string, args ...string) (string, bool) {
 		return "", false
 	}
 	return strings.TrimSuffix(string(stoud), "\n"), true
-}
-
-func (p *Command) call(url string) *http.Response {
-	log.Printf(url)
-	refreshToken := p.getRefreshToken()
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-	req.Header.Add("refresh_token", refreshToken)
-
-	client := http.DefaultClient
-	res, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return res
 }
 
 func NewCommand(v *nvim.Nvim) *Command {
@@ -318,15 +300,14 @@ func (p *Command) showDevices() error {
 	return p.getDevices()
 }
 
-func (p *Command) closeWins() error {
+func (p *Command) closeWins() {
 	p.DeleteBuffer(*p.Buffer, map[string]bool{"force": true})
 	for win := range p.wins {
 		p.closeOpenWin(win)
 	}
-	return nil
 }
 
-func (p *Command) search(args []string) error {
+func (p *Command) search(args []string) {
 	log.Printf("starting search...")
 	searchType := args[0]
 	b, err := p.CurrentLine()
@@ -364,8 +345,6 @@ func (p *Command) search(args []string) error {
 
 	p.SetVar("spotify_search", spotifySearch)
 	p.Command("lua require'nvim-spotify'.init()")
-
-	return nil
 }
 
 func (p *Command) play(args []string) {
@@ -381,14 +360,14 @@ func (p *Command) play(args []string) {
 func (p *Command) playback(args []string) {
 	switch args[0] {
 	case "next":
-		p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/skip-09d0606")
+		execCommand("spt", "playback", "--next")
 	case "pause":
-		p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/pause-98016ef")
+		execCommand("spt", "playback", "--toggle")
 	}
 }
 
 func (p *Command) save() {
-	p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/save-9067f22")
+	execCommand("spt", "playback", "--like")
 }
 
 func (p *Command) closeOpenWin(w *nvim.Window) {
@@ -412,10 +391,12 @@ func Register(p *plugin.Plugin) error {
 	return nil
 }
 
-func main() {
+func init() {
 	l, _ := os.Create("/tmp/nvim-spotify-plugin.log")
 	log.SetOutput(l)
 	defer l.Close()
+}
 
+func main() {
 	plugin.Main(Register)
 }

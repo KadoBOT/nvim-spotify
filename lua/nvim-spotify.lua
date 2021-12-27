@@ -91,7 +91,6 @@ local list_devices = function (opts)
             fn =  function(prompt)
                 local res = vim.g.spotify_devices
                 local results = {}
-                print(vim.inspect(res))
 
                 for _, v in pairs(res) do
                     table.insert(results, { v[1] })
@@ -112,16 +111,25 @@ local list_devices = function (opts)
     }):find()
 end
 
-local M = {}
+local M = {
+    opts = {
+        status = {
+            update_interval = 10000,
+            format = '%s%t by %a'
+        }
+    },
+    status = {},
+    _status_line = ""
+}
 
 M.namespace = 'Spotify'
 
 function M.setup(opts)
-    vim.g.spotify_refresh_token = opts.refresh_token
+    M.opts = vim.tbl_deep_extend("force", M.opts, opts)
 
 	vim.api.nvim_set_keymap("n", "<Plug>(SpotifySkip)", ":<c-u>call SpotifyPlayback('next')<CR>", { silent = true })
 	vim.api.nvim_set_keymap("n", "<Plug>(SpotifyPause)", ":<c-u>call SpotifyPlayback('pause')<CR>", { silent = true })
-	vim.api.nvim_set_keymap("n", "<Plug>(SpotifySave)", ":<c-u>call SpotifySave()<CR>", { silent = true })
+    vim.api.nvim_set_keymap("n", "<Plug>(SpotifySave)", ":<c-u>call SpotifySave()<CR>", { silent = true })
 end
 
 function M.init()
@@ -131,5 +139,24 @@ end
 function M.devices()
     list_devices(require'telescope.themes'.get_dropdown{})
 end
+
+function M.status:start()
+    local timer = vim.loop.new_timer()
+   timer:start(1000, M.opts.status.update_interval, vim.schedule_wrap(function ()
+        local cmd = "spt playback --status --format '" .. M.opts.status.format .. "'"
+        vim.fn.jobstart(cmd, { on_stdout = self.on_event, stdout_buffered = true })
+    end))
+end
+
+function M.status:on_event(data)
+    if data then
+        M._status_line = data[1]
+    end
+end
+
+function M.status:listen()
+    return M._status_line
+end
+
 
 return M
