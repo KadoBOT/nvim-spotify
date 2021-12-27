@@ -1,12 +1,13 @@
 # 🎵nvim-spotify
 
-For productivity addicts who enjoys coding while listening to Spotify, but hates switching to the app to control the music.
-![image](https://user-images.githubusercontent.com/11719845/147326897-fe7c7485-0e6a-4ba9-8698-781256be2dea.png)
+For productivity addicts who enjoy coding while listening to Spotify, and cannot lose their focus switching to the app to control their music.
+
+`nvim-spotify` requires [spotify-tui](https://github.com/Rigellute/spotify-tui)
 
 ## Features
 
-- Telescope to display the search results
-![image](https://user-images.githubusercontent.com/11719845/147326933-6f86ec02-eb32-4501-a719-ea988225e2db.png)
+- Display/Filter the search results with Telescope
+- Currently playing statusline.
 - Pause/Resume a track
 - Skip a track
 - Add a track to the library
@@ -19,11 +20,10 @@ For productivity addicts who enjoys coding while listening to Spotify, but hates
   - Artist (`<C-R>`)
 
 ## Requirements
+> `nvim-spotify` is a wrapper for `spotify-tui`, therefore, it is required for this plugin to work. Check [their Github
+> repository for installation instructions](https://github.com/Rigellute/spotify-tui#installation)
 
-> Unlike other Spotify plugins, you don't need to create an app, and no server is needed on your machine. Although, you still need to authorize this plugin, so it can control your music.
-
-A refresh token. You need to authorize  the `nvim-spotify` app through [this link](https://europe-west3-nvim-spotify.cloudfunctions.net/login-4b8c731) and add the refresh_token that is returned to the plugin configuration.
-
+- [Spotify TUI](https://github.com/Rigellute/spotify-tui)
 - Golang
 - Telescope
 
@@ -39,7 +39,11 @@ use {
         local spotify = require'nvim-spotify'
 
         spotify.setup {
-            refresh_token = "YOUR_REFRESH_TOKEN"
+            -- default opts
+            status = {
+                update_interval = 10000, -- the interval (ms) to check for what's currently playing
+                format = '%s %t by %a' -- spotify-tui --format argument
+            }
         }
     end,
     run = 'make'
@@ -51,36 +55,36 @@ use {
 Plug 'KadoBOT/nvim-spotify', { 'do': 'make' }
 ```
 
-
-## Configuration
-
-A valid refresh_token is required for this plugin to work. You can retrieve yours after authorizing the app [using this link](https://europe-west3-nvim-spotify.cloudfunctions.net/login-4b8c731)
+#### Notes
+Decreasing the `update_interval` value means more API calls in a shorter period. Because of the Spotify API rate limiter, setting this too low can block future requests.
+Besides that, those constant updates can make your computer slow. 
+**So bear this in mind when changing this value.**
 
 ## Usage
+`nvim-spotify` has two commands:
+
+### Connecting to a Device
+Use this command to select which device Spotify should play on.
+```
+:SpotifyDevices
+```
+
+### Opening search input
+Spotify Search input. Check the keymaps below for Search shortcuts.
+```
+:Spotify
+```
 
 ### Default keymaps:
-The following keymaps are set by default when the Spotify plugin window is open:
-```plain
-{"n", "<Esc>"} // close the plugin window
-{"n", "q"} // close the plugin window
-{"n", "<C-N>"} // Select the next device in the list
-{"n", "<Tab>"} // Select the next device in the list
-{"n", "<S-Tab>"} // Select the previous device in the list
-{"n", "<C-P>"} // Select the previous device in the list
-{"n", "<C-T>"} // Search for tracks
-{"n", "<C-R>"} // Search for artists
-{"n", "<C-L>"} // Search for albums
-{"n", "<C-Y>"} // Search for playlists
-{"i", "<CR>"}  // Search for tracks
-{"i", "<C-N>"} // Select the next device in the list
-{"i", "<Tab>"} // Select the next device in the list
-{"i", "<C-P>"} // Select the previous device in the list
-{"i", "<S-Tab>"} // Select the previous device in the list
-{"i", "<C-T>"} // Search for tracks
-{"i", "<C-R>"} // Search for artists
-{"i", "<C-L>"} // Search for albums
-{"i", "<C-Y>"} // Search for playlists
-```
+The following keymaps are set by default when the Spotify search input is open:
+| mode | key | Description |
+|---|---|---|
+| normal | Esc | Close
+| normal | q | Close
+| normal, insert | C-T | Search for Tracks
+| normal, insert | C-Y | Search for Playlists
+| normal, insert | C-L | Search for Albums
+| normal, insert | C-R | Search for Artists
 
 ### Extra keymaps
  You can also define the additional following keymaps
@@ -88,10 +92,24 @@ The following keymaps are set by default when the Spotify plugin window is open:
 vim.api.nvim_set_keymap("n", "<leader>sn", "<Plug>(SpotifySkip)",  { silent = true }) -- Skip the current track
 vim.api.nvim_set_keymap("n", "<leader>sp", "<Plug>(SpotifyPause)", , { silent = true }) -- Pause/Resume the current track
 vim.api.nvim_set_keymap("n", "<leader>ss", "<Plug>(SpotifySave)",  { silent = true }) -- Add the current track to your library
-vim.api.nvim_set_keymap("n", "<leader>so", ":Spotify<CR>",  { silent = true }) -- Open Spotify plugin window
+vim.api.nvim_set_keymap("n", "<leader>so", ":Spotify<CR>",  { silent = true }) -- Open Spotify Search window
+vim.api.nvim_set_keymap("n", "<leader>sd", ":SpotifyDevices<CR>",  { silent = true }) -- Open Spotify Devices window
 ```
 
-## Sponsoring
+### Statusline
+You can display what's currently playing on your statusline. The example below shows how to show it on [lualine](https://github.com/nvim-lualine/lualine.nvim),
+although the configuration should be quite similar on other statusline plugins:
+```lua
+local status = require'nvim-spotify'.status
 
-As you might have noticed, I'm hosting the server for handling all the requests on GCP, so you don't have to run it on your machine. While a single request is not expensive, a single user makes 5 requests every time it opens the plugin and run a search. With the increasing amount of users using this plugin, this might get more expensive. With that said, please consider sponsoring me. Thanks!
+status:start()
+
+require('lualine').setup {
+    sections = {
+        lualine_x = {
+            status.listen
+        }
+    }
+}
+```
 

@@ -1,18 +1,12 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
-	"math"
-	"net/http"
-	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"unicode/utf8"
 
-	"github.com/KadoBOT/spotify/v2"
 	"github.com/neovim/go-client/nvim"
 	"github.com/neovim/go-client/nvim/plugin"
 )
@@ -23,13 +17,10 @@ const HEIGHT = 3
 type Command struct {
 	*nvim.Nvim
 	*nvim.Buffer
-	wins       map[*nvim.Window]bool
-	input      string
-	anchor     *nvim.Window
-	devices    []spotify.PlayerDevice
-	devicesBuf *nvim.Buffer
-	selected   int
-	nsID       int
+	wins   map[*nvim.Window]bool
+	input  string
+	anchor *nvim.Window
+	nsID   int
 }
 
 func safeString(str string) string {
@@ -39,21 +30,13 @@ func safeString(str string) string {
 	return str
 }
 
-func (p *Command) call(url string) *http.Response {
-	log.Printf(url)
-	refreshToken := p.getRefreshToken()
-	req, err := http.NewRequest("GET", url, nil)
+func execCommand(name string, args ...string) (string, bool) {
+	cmd := exec.Command(name, args...)
+	stoud, err := cmd.Output()
 	if err != nil {
-		log.Fatalf(err.Error())
+		return "", false
 	}
-	req.Header.Add("refresh_token", refreshToken)
-
-	client := http.DefaultClient
-	res, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return res
+	return strings.TrimSuffix(string(stoud), "\n"), true
 }
 
 func NewCommand(v *nvim.Nvim) *Command {
@@ -192,129 +175,37 @@ func (p *Command) createInput() {
 }
 
 func (p *Command) getDevices() error {
-	res := p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/devices-d76dbb1")
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	log.Println("getting devices")
+	res, ok := execCommand("spt", "list", "-d")
+	devices := strings.Split(res, "\n")
 
-	if res.StatusCode != 200 {
-		log.Fatalf(res.Status, string(body))
-		return err
-	}
-
-	if err = json.Unmarshal(body, &p.devices); err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	if len(p.devices) != 0 {
-		log.Printf("Listing Devices")
-		buf, err := p.CreateBuffer(false, true)
-		if err != nil {
-			log.Fatalf(err.Error())
-			return err
+	devicesNames := [][]string{}
+	if ok {
+		for _, dev := range devices {
+			cur := strings.SplitN(dev, " ", 2)
+			devicesNames = append(devicesNames, []string{cur[1]})
 		}
-		p.devicesBuf = &buf
-
-		top_border := []byte("╭" + strings.Repeat("─", (WIDTH-22)/2) + " Connect to a Device " + strings.Repeat("─", (WIDTH-23)/2) + "╮")
-		replacement := [][]byte{top_border}
-		for i, device := range p.devices {
-			emptyAmount := (WIDTH - 5 - len(device.Name))
-
-			if i == p.selected {
-				line := []byte("│ ▶ " + safeString(device.Name) + strings.Repeat(" ", emptyAmount) + "│")
-				replacement = append(replacement, line)
-			} else {
-				line := []byte("│   " + safeString(device.Name) + strings.Repeat(" ", emptyAmount) + "│")
-				replacement = append(replacement, line)
-			}
-		}
-
-		bot_border := []byte("╰" + strings.Repeat("─", WIDTH-2) + "╯")
-		replacement = append(replacement, bot_border)
-
-		opts := nvim.WindowConfig{
-			Relative:  "win",
-			Win:       *p.anchor,
-			Width:     WIDTH,
-			Height:    len(replacement),
-			BufPos:    [2]int{0, 0},
-			Row:       3,
-			Col:       -2,
-			Style:     "minimal",
-			ZIndex:    50,
-			Focusable: true,
-		}
-
-		p.SetBufferLines(buf, 0, -1, false, replacement)
-		p.SetBufferOption(buf, "bufhidden", "wipe")
-		p.SetBufferOption(buf, "buftype", "nofile")
-
-		win, err := p.OpenWindow(buf, false, &opts)
-		if err != nil {
-			log.Fatalf(err.Error())
-			return err
-		}
-		p.wins[&win] = true
-
-		p.SetWindowOption(win, "winhl", "Normal:SpotifyBorder")
-		p.setDevicesHighlight(0)
-		p.SetBufferOption(buf, "modifiable", false)
-
-		return nil
 	}
+	log.Println(devicesNames)
+	p.SetVar("spotify_devices", devicesNames)
+
+	p.Command("lua require'nvim-spotify'.devices()")
 
 	return nil
 }
 
-func (p *Command) setDevicesHighlight(selected int) {
-	log.Println("Setting devices highlight")
-	p.SetBufferOption(*p.devicesBuf, "modifiable", true)
-	p.Nvim.ClearBufferNamespace(*p.devicesBuf, p.nsID, 0, -1)
-	p.Nvim.SetBufferText(*p.devicesBuf, p.selected+1, 4, p.selected+1, 7, [][]byte{[]byte(" ")})
-	p.selected = selected
-	p.Nvim.AddBufferHighlight(*p.devicesBuf, p.nsID, "SpotifySelection", p.selected+1, 3, WIDTH+3)
-	p.Nvim.SetBufferText(*p.devicesBuf, p.selected+1, 4, p.selected+1, 5, [][]byte{[]byte("▶")})
-	p.SetBufferOption(*p.devicesBuf, "modifiable", false)
-}
-
 func (p *Command) getCurrentlyPlayingTrack() error {
-	res := p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/cur_play-9dc7855")
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	log.Println("cur playing")
+	curPlaying, ok := execCommand("spt", "playback", "-s", "-f", "%t by %a")
 
-	if res.StatusCode != 200 {
-		log.Fatalf(res.Status, string(body))
-		return err
-	}
-
-	var currentlyPlaying spotify.CurrentlyPlaying
-	if err = json.Unmarshal(body, &currentlyPlaying); err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	if currentlyPlaying.Playing {
+	if ok {
 		log.Printf("Creating CurrentlyPlaying")
 		buf, err := p.CreateBuffer(false, true)
 		if err != nil {
 			log.Fatalf(err.Error())
 			return err
 		}
-		var artists string
-		for i, artist := range currentlyPlaying.Item.Artists {
-			if i == 0 {
-				artists += artist.Name
-			} else if i == len(currentlyPlaying.Item.Artists)-1 {
-				artists += " and " + artist.Name
-			} else {
-				artists += ", " + artist.Name
-			}
-		}
-		playingName := safeString(currentlyPlaying.Item.Name + " by " + artists)
+		playingName := safeString(curPlaying)
 
 		log.Println(playingName)
 
@@ -357,37 +248,13 @@ func (p *Command) getCurrentlyPlayingTrack() error {
 		p.SetWindowOption(win, "winhl", "Normal:SpotifyBorder")
 		p.SetWindowOption(win, "winblend", 0)
 		p.SetWindowOption(win, "foldlevel", 100)
-
-		return nil
 	}
 
 	return nil
 }
 
-func (p *Command) setKeyMaps() {
+func (p *Command) setKeyMaps(keys [][3]string) {
 	log.Printf("Setting Keymaps")
-
-	keys := [][3]string{
-		{"n", "<Esc>", ":call SpotifyCloseWin()<CR>"},
-		{"n", "q", ":call SpotifyCloseWin()<CR>"},
-		{"n", "<C-N>", ":call SpotifyDevices('next')<CR>"},
-		{"n", "<Tab>", ":call SpotifyDevices('next')<CR>"},
-		{"n", "<S-Tab>", ":call SpotifyDevices('prev')<CR>"},
-		{"n", "<C-P>", ":call SpotifyDevices('prev')<CR>"},
-		{"n", "<C-T>", ":call SpotifySearch('track')<CR>"},
-		{"n", "<C-R>", ":call SpotifySearch('artist')<CR>"},
-		{"n", "<C-L>", ":call SpotifySearch('album')<CR>"},
-		{"n", "<C-Y>", ":call SpotifySearch('playlist')<CR>"},
-		{"i", "<CR>", "<C-O>:call SpotifySearch('track')<CR>"},
-		{"i", "<C-N>", "<C-O>:call SpotifyDevices('next')<CR>"},
-		{"i", "<Tab>", "<C-O>:call SpotifyDevices('next')<CR>"},
-		{"i", "<C-P>", "<C-O>:call SpotifyDevices('prev')<CR>"},
-		{"i", "<S-Tab>", "<C-O>:call SpotifyDevices('prev')<CR>"},
-		{"i", "<C-T>", "<C-O>:call SpotifySearch('track')<CR>"},
-		{"i", "<C-R>", "<C-O>:call SpotifySearch('artist')<CR>"},
-		{"i", "<C-L>", "<C-O>:call SpotifySearch('album')<CR>"},
-		{"i", "<C-Y>", "<C-O>:call SpotifySearch('playlist')<CR>"},
-	}
 
 	opts := map[string]bool{"noremap": true, "silent": true, "nowait": true}
 	for _, k := range keys {
@@ -403,22 +270,41 @@ func (p *Command) configPlugin() {
 	p.Command(`hi SpotifySelection guifg=#191414 guibg=#1ed760`)
 
 	p.createAnchor()
-	p.createPlaceholder()
-	p.getCurrentlyPlayingTrack()
-	p.getDevices()
-	p.createInput()
-	p.setKeyMaps()
 }
 
-func (p *Command) closeWins() error {
-	if err := p.Command("stopinsert!"); err != nil {
-		log.Fatalf(err.Error())
+func (p *Command) start() {
+	p.configPlugin()
+
+	p.createPlaceholder()
+	p.getCurrentlyPlayingTrack()
+	p.createInput()
+
+	keys := [][3]string{
+		{"n", "<Esc>", ":call SpotifyCloseWin()<CR>"},
+		{"n", "q", ":call SpotifyCloseWin()<CR>"},
+		{"n", "<C-T>", ":call SpotifySearch('tracks')<CR>"},
+		{"n", "<C-R>", ":call SpotifySearch('artists')<CR>"},
+		{"n", "<C-L>", ":call SpotifySearch('albums')<CR>"},
+		{"n", "<C-Y>", ":call SpotifySearch('playlists')<CR>"},
+		{"i", "<CR>", "<C-O>:call SpotifySearch('tracks')<CR>"},
+		{"i", "<C-T>", "<C-O>:call SpotifySearch('tracks')<CR>"},
+		{"i", "<C-R>", "<C-O>:call SpotifySearch('artists')<CR>"},
+		{"i", "<C-L>", "<C-O>:call SpotifySearch('albums')<CR>"},
+		{"i", "<C-Y>", "<C-O>:call SpotifySearch('playlists')<CR>"},
 	}
 
+	p.setKeyMaps(keys)
+}
+
+func (p *Command) showDevices() error {
+	return p.getDevices()
+}
+
+func (p *Command) closeWins() {
+	p.DeleteBuffer(*p.Buffer, map[string]bool{"force": true})
 	for win := range p.wins {
 		p.closeOpenWin(win)
 	}
-	return nil
 }
 
 func (p *Command) search(args []string) {
@@ -430,57 +316,58 @@ func (p *Command) search(args []string) {
 	}
 	input := string(b)
 
+	formatList := func(list string) [][]string {
+		var spotifySearch [][]string
+		line := strings.Split(list, "\n")
+		for _, l := range line {
+			spotifySearch = append(spotifySearch, strings.Split(l, "||"))
+		}
+		return spotifySearch
+	}
+	var searchResult string
+
+	switch searchType {
+	case "tracks":
+		searchResult, _ = execCommand("spt", "search", "--tracks", input, "--format", "%t||%a||%u", "--limit", "20")
+	case "playlists":
+		searchResult, _ = execCommand("spt", "search", "--playlists", input, "--format", "%p|| ||%u", "--limit", "20")
+	case "artists":
+		searchResult, _ = execCommand("spt", "search", "--artists", input, "--format", "%a|| ||%u", "--limit", "20")
+	case "albums":
+		searchResult, _ = execCommand("spt", "search", "--albums", input, "--format", "%b||%a||%u", "--limit", "20")
+	case "shows":
+		searchResult, _ = execCommand("spt", "search", "--shows", input, "--format", "%h||%a||%u", "--limit", "20")
+	}
+	spotifySearch := formatList(searchResult)
+
 	p.SetVar("spotify_type", searchType)
 	p.SetVar("spotify_title", input)
 
-	res := p.call(fmt.Sprintf("https://europe-west3-nvim-spotify.cloudfunctions.net/search-8821b6b?type=%s&query=%s", url.QueryEscape(searchType), url.QueryEscape(input)))
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	if res.StatusCode != 200 {
-		log.Fatalf(string(body))
-		return
-	}
-
-	var searchResult spotify.SearchResult
-	if err = json.Unmarshal(body, &searchResult); err != nil {
-		log.Fatalf(err.Error())
-	}
-	p.SetVar("spotify_search", searchResult)
+	p.SetVar("spotify_search", spotifySearch)
 	p.Command("lua require'nvim-spotify'.init()")
 }
 
 func (p *Command) play(args []string) {
-	p.call(fmt.Sprintf("https://europe-west3-nvim-spotify.cloudfunctions.net/play-7613342?uri=%s&id=%s", url.QueryEscape(args[0]), url.QueryEscape(p.devices[p.selected].ID.String())))
+	var selected []string
+	p.Var("spotify_device", &selected)
+	if len(selected) != 0 {
+		execCommand("spt", "play", "-u", args[0], "-d", selected[0])
+	} else {
+		execCommand("spt", "play", "-u", args[0])
+	}
 }
 
 func (p *Command) playback(args []string) {
 	switch args[0] {
 	case "next":
-		p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/skip-09d0606")
+		execCommand("spt", "playback", "--next")
 	case "pause":
-		p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/pause-98016ef")
+		execCommand("spt", "playback", "--toggle")
 	}
 }
 
 func (p *Command) save() {
-	p.call("https://europe-west3-nvim-spotify.cloudfunctions.net/save-9067f22")
-}
-
-func (p *Command) deviceSwitch(args []string) {
-	selected := p.selected
-	if args[0] == "next" {
-		selected = (p.selected + 1) % len(p.devices)
-	}
-
-	if args[0] == "prev" {
-		selected = (p.selected - 1) % len(p.devices)
-	}
-
-	p.setDevicesHighlight(int(math.Abs(float64(selected))))
+	execCommand("spt", "playback", "--like")
 }
 
 func (p *Command) closeOpenWin(w *nvim.Window) {
@@ -493,11 +380,11 @@ func Register(p *plugin.Plugin) error {
 	log.Printf("Registering Plugin")
 	c := NewCommand(p.Nvim)
 
-	p.HandleCommand(&plugin.CommandOptions{Name: "Spotify"}, c.configPlugin)
+	p.HandleCommand(&plugin.CommandOptions{Name: "Spotify"}, c.start)
+	p.HandleCommand(&plugin.CommandOptions{Name: "SpotifyDevices"}, c.showDevices)
 	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifyCloseWin"}, c.closeWins)
 	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifySearch"}, c.search)
 	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifyPlay"}, c.play)
-	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifyDevices"}, c.deviceSwitch)
 	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifyPlayback"}, c.playback)
 	p.HandleFunction(&plugin.FunctionOptions{Name: "SpotifySave"}, c.save)
 
@@ -508,6 +395,5 @@ func main() {
 	l, _ := os.Create("/tmp/nvim-spotify-plugin.log")
 	log.SetOutput(l)
 	defer l.Close()
-
 	plugin.Main(Register)
 }

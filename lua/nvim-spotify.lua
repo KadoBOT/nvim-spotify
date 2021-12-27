@@ -8,51 +8,10 @@ local conf = require("telescope.config").values
 local function finder_fn()
     return function(prompt)
         local res = vim.g.spotify_search
-        local search_type = vim.g.spotify_type
         local results = {}
 
-        if search_type == "artist" then
-            for _, v in pairs(res.Artists.Artists) do
-                table.insert(results, { v.Name, "", v.URI })
-            end
-        end
-
-        if search_type == "playlist" then
-            for _, v in pairs(res.Playlists.Playlists) do
-                table.insert(results, { v.Name, v.Owner.DisplayName, v.URI })
-            end
-        end
-
-        if search_type == "album" then
-            for _, v in pairs(res.Albums.Albums) do
-                local artist_name = ""
-                for i, artist in ipairs(v.Artists) do
-                    if i == 1 then
-                        artist_name = artist_name ..  artist.Name
-                    elseif not v.Artists[i + 1] then
-                        artist_name = artist_name .. " and " .. artist.Name
-                    else
-                        artist_name = artist_name .. ", " .. artist.Name
-                    end
-                end
-                table.insert(results, { v.Name, artist_name, v.URI })
-            end
-        end
-
-        if search_type == "track" then
-            for _, v in pairs(res.Tracks.Tracks) do
-                local artist_name = ""
-                for i, artist in ipairs(v.Artists) do
-                    if i == 1 then
-                        artist_name = artist_name ..  artist.Name
-                    elseif not v.Artists[i + 1] then
-                        artist_name = artist_name .. " and " .. artist.Name
-                    else
-                        artist_name = artist_name .. ", " .. artist.Name
-                    end
-                end
-                table.insert(results, { v.Name, artist_name, v.URI })
-            end
+        for _, v in pairs(res) do
+            table.insert(results, { v[1], v[2], v[3] })
         end
 
         return results
@@ -73,7 +32,7 @@ local function entry_fn(opts)
     }
 
     local make_display = function (entry)
-        if vim.g.spotify_type == 'artist' then
+        if vim.g.spotify_type == 'artists' or vim.g.spotify_type == 'playlists' then
             return displayer {
                 { entry.track, "TelescopeResultsNumber" },
             }
@@ -117,21 +76,87 @@ local spotify = function (opts)
     }):find()
 end
 
+local list_devices = function (opts)
+    opts = opts or {}
+    pickers.new(opts, {
+        prompt_title = "Connect to a Device",
+        finder = finders.new_dynamic({
+            entry_maker = function (entry)
+                return {
+                    value = entry,
+                    display = entry[1],
+                    ordinal = entry[1]
+                }
+            end,
+            fn =  function(prompt)
+                local res = vim.g.spotify_devices
+                local results = {}
 
-local M = {}
+                for _, v in pairs(res) do
+                    table.insert(results, { v[1] })
+                end
+
+                return results
+            end
+        }),
+        sorter = conf.generic_sorter(opts),
+        attach_mappings = function (prompt_bufnr, map)
+            actions.select_default:replace(function()
+                actions.close(prompt_bufnr)
+                local selection = actions_state.get_selected_entry()
+                vim.g.spotify_device = selection.value
+            end)
+            return true
+        end
+    }):find()
+end
+
+local M = {
+    opts = {
+        status = {
+            update_interval = 10000,
+            format = '%s%t by %a'
+        }
+    },
+    status = {},
+    _status_line = ""
+}
 
 M.namespace = 'Spotify'
 
 function M.setup(opts)
-    vim.g.spotify_refresh_token = opts.refresh_token
+    M.opts = vim.tbl_deep_extend("force", M.opts, opts)
 
 	vim.api.nvim_set_keymap("n", "<Plug>(SpotifySkip)", ":<c-u>call SpotifyPlayback('next')<CR>", { silent = true })
 	vim.api.nvim_set_keymap("n", "<Plug>(SpotifyPause)", ":<c-u>call SpotifyPlayback('pause')<CR>", { silent = true })
-	vim.api.nvim_set_keymap("n", "<Plug>(SpotifySave)", ":<c-u>call SpotifySave()<CR>", { silent = true })
+    vim.api.nvim_set_keymap("n", "<Plug>(SpotifySave)", ":<c-u>call SpotifySave()<CR>", { silent = true })
 end
 
 function M.init()
     spotify(require'telescope.themes'.get_dropdown{})
 end
+
+function M.devices()
+    list_devices(require'telescope.themes'.get_dropdown{})
+end
+
+function M.status:start()
+    local timer = vim.loop.new_timer()
+   timer:start(1000, M.opts.status.update_interval, vim.schedule_wrap(function ()
+        local cmd = "spt playback --status --format '" .. M.opts.status.format .. "'"
+        vim.fn.jobstart(cmd, { on_stdout = self.on_event, stdout_buffered = true })
+    end))
+end
+
+function M.status:on_event(data)
+    if data then
+        M._status_line = data[1]
+    end
+end
+
+function M.status:listen()
+    return M._status_line
+end
+
 
 return M
