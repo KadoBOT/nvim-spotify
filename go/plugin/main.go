@@ -43,16 +43,6 @@ func NewCommand(v *nvim.Nvim) *Command {
 	return &Command{Nvim: v, wins: make(map[*nvim.Window]bool)}
 }
 
-func (p *Command) getRefreshToken() string {
-	var refreshToken string
-	log.Printf("getting refresh token")
-	if err := p.Nvim.Var("spotify_refresh_token", &refreshToken); err != nil {
-		log.Fatalf("cannot get refreshToken %s", err.Error())
-	}
-	log.Printf(refreshToken)
-	return refreshToken
-}
-
 func (p *Command) createPlaceholder() error {
 	log.Printf("Creating Placeholder")
 	buf, err := p.CreateBuffer(false, true)
