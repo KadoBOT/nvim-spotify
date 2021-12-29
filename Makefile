@@ -1,5 +1,5 @@
 build:
-	cd ./go; go build -o ../bin/NvimSpotify ./plugin
+	cd ./go; go build -o ../bin/NvimSpotify
 
 manifest:
 	NvimSpotify -manifest NvimSpotify
