@@ -1,6 +1,3 @@
-As you might have noticed, I'm hosting the server for handling all the requests on GCP, so you don't have to run it on your machine. While a single request is not expensive, a single user makes 5 requests every time it opens the plugin and run a search. With the increasing amount of users using this plugin, this might get more expensive. With that said, please consider sponsoring me. Thanks!
-# These are supported funding model platforms
-
 github: [kadobot]
 patreon: # Replace with a single Patreon username
 open_collective: https://opencollective.com/nvim-spotify
