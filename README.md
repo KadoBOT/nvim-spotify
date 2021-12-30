@@ -5,21 +5,14 @@ For productivity addicts who enjoy coding while listening to Spotify, and cannot
 `nvim-spotify` requires [spotify-tui](https://github.com/Rigellute/spotify-tui)
 
 ## Features
-- Display/Filter the search results with Telescope
-
-- Currently playing statusline.
-
-- Pause/Resume a track
-
-- Skip a track
-
-- Add a track to the library
-
-- Display the name of what's being played
-
-- Select which device to play on
-
-- Search by:
+-   Display/Filter the search results with Telescope  
+-   Currently playing statusline.  
+-   Pause/Resume a track  
+-   Skip a track  
+-   Add a track to the library  
+-   Display the name of what's being played  
+-   Select which device to play on  
+-   Search by:
   - Track (`<C-T> or CR`)
   - Album (`<C-L>`)
   - Playlist (`<C-Y>`)
@@ -29,11 +22,9 @@ For productivity addicts who enjoy coding while listening to Spotify, and cannot
 > `nvim-spotify` is a wrapper for `spotify-tui`, therefore, it is required for this plugin to work. Check [their Github
 > repository for installation instructions](https://github.com/Rigellute/spotify-tui#installation)
 
-- [Spotify TUI](https://github.com/Rigellute/spotify-tui)
-
-- Golang
-
-- Telescope
+-   [Spotify TUI](https://github.com/Rigellute/spotify-tui)
+-   Golang
+-   Telescope
 
 ## Installation
 
@@ -83,7 +74,7 @@ Spotify Search input. Check the keymaps below for Search shortcuts.
 :Spotify
 ```
 
-### Default keymaps:
+### Default keymaps
 The following keymaps are set by default when the Spotify search input is open:
 | mode | key | Description |
 |---|---|---|
