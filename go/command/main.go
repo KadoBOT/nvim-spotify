@@ -6,6 +6,7 @@ import (
 	"github.com/neovim/go-client/nvim"
 )
 
+// Command stores nvim and buffer
 type Command struct {
 	*nvim.Nvim
 	*nvim.Buffer
@@ -19,6 +20,7 @@ const WIDTH = 70
 // HEIGHT of the buffers
 const HEIGHT = 3
 
+// NewCommand creates the wrapper for handling the plugin
 func NewCommand(v *nvim.Nvim) *Command {
 	return &Command{Nvim: v, wins: make(map[*nvim.Window]bool)}
 }

@@ -17,11 +17,11 @@ func (p *Command) createPlaceholder() error {
 		return err
 	}
 
-	top_border := []byte("╭" + strings.Repeat("─", (WIDTH-17)/2) + " Spotify Search " + strings.Repeat("─", (WIDTH-18)/2) + "╮")
-	empty_line := []byte("│ › " + strings.Repeat(" ", WIDTH-5) + "│")
-	bot_border := []byte("╰" + strings.Repeat("─", WIDTH-2) + "╯")
+	topBorder := []byte("╭" + strings.Repeat("─", (WIDTH-17)/2) + " Spotify Search " + strings.Repeat("─", (WIDTH-18)/2) + "╮")
+	emptyLine := []byte("│ › " + strings.Repeat(" ", WIDTH-5) + "│")
+	botBorder := []byte("╰" + strings.Repeat("─", WIDTH-2) + "╯")
 
-	replacement := [][]byte{top_border, empty_line, bot_border}
+	replacement := [][]byte{topBorder, emptyLine, botBorder}
 
 	opts := nvim.WindowConfig{
 		Relative:  "win",
