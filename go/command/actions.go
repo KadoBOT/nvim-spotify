@@ -1,26 +1,35 @@
 package command
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/kadobot/nvim-spotify/utils"
 	"github.com/neovim/go-client/nvim"
+	"github.com/zmb3/spotify/v2"
 )
 
 func (p *Command) GetCurrentlyPlayingTrack() error {
 	log.Println("cur playing")
-	curPlaying, ok := utils.ExecCommand("spt", "playback", "-s", "-f", "%t by %a")
+	ctx := context.Background()
+	curPlaying, err := p.client.PlayerCurrentlyPlaying(ctx)
+	if err != nil {
+		log.Println(err.Error())
+	}
 
-	if ok {
+	if curPlaying.Playing {
 		log.Printf("Creating CurrentlyPlaying")
 		buf, err := p.CreateBuffer(false, true)
 		if err != nil {
 			log.Fatalf(err.Error())
 			return err
 		}
-		playingName := utils.SafeString(curPlaying, WIDTH-10)
+
+		fullName := fmt.Sprintf("%s by %s", curPlaying.Item.Name, utils.FormatArtistsName(curPlaying.Item.Artists))
+		playingName := utils.SafeString(fullName, WIDTH-10)
 
 		log.Println(playingName)
 
@@ -77,6 +86,75 @@ func (p *Command) setKeyMaps(keys [][3]string) {
 	}
 }
 
+func (p *Command) SearchFn(args []string) {
+	searchType := args[0]
+	input := args[1]
+	log.Println("searchtype: ", searchType)
+	log.Println("searchinput: ", input)
+	p.SetVar("spotify_type", searchType)
+
+	var spotifySearch [][4]string
+	ctx := context.Background()
+	switch searchType {
+	case "tracks":
+		searchResult, _ := p.client.Search(ctx, input, spotify.SearchTypeTrack)
+		for _, l := range searchResult.Tracks.Tracks {
+			artistName := utils.FormatArtistsName(l.Artists)
+			spotifySearch = append(spotifySearch, [4]string{l.Name, artistName, string(l.URI), l.ID.String()})
+		}
+	case "playlists":
+		searchResult, _ := p.client.Search(ctx, input, spotify.SearchTypePlaylist)
+		for _, l := range searchResult.Playlists.Playlists {
+			spotifySearch = append(spotifySearch, [4]string{l.Name, l.Owner.DisplayName, string(l.URI), l.ID.String()})
+		}
+	case "artists":
+		searchResult, _ := p.client.Search(ctx, input, spotify.SearchTypeArtist)
+		for _, l := range searchResult.Artists.Artists {
+			spotifySearch = append(spotifySearch, [4]string{l.Name, "", string(l.URI), l.ID.String()})
+		}
+	case "albums":
+		searchResult, _ := p.client.Search(ctx, input, spotify.SearchTypeAlbum)
+		for _, l := range searchResult.Albums.Albums {
+			artistName := utils.FormatArtistsName(l.Artists)
+			spotifySearch = append(spotifySearch, [4]string{l.Name, artistName, string(l.URI), l.ID.String()})
+		}
+	case "artistsalbums":
+		p.SetVar("spotify_type", "albums")
+
+		artistAlbums, err := p.client.GetArtistAlbums(ctx, spotify.ID(input), []spotify.AlbumType{spotify.AlbumTypeAlbum})
+		if err != nil {
+			log.Println(err.Error())
+		}
+		for _, l := range artistAlbums.Albums {
+			artistName := utils.FormatArtistsName(l.Artists)
+			spotifySearch = append(spotifySearch, [4]string{l.Name, artistName, string(l.URI), l.ID.String()})
+		}
+	case "playliststracks":
+		p.SetVar("spotify_type", "tracks")
+		playlistTracks, err := p.client.GetPlaylistTracks(ctx, spotify.ID(input))
+		if err != nil {
+			log.Println(err.Error())
+		}
+		for _, l := range playlistTracks.Tracks {
+			artistName := utils.FormatArtistsName(l.Track.Artists)
+			spotifySearch = append(spotifySearch, [4]string{l.Track.Name, artistName, string(l.Track.URI), l.Track.ID.String()})
+		}
+	case "albumstracks":
+		p.SetVar("spotify_type", "tracks")
+		albumTracks, err := p.client.GetAlbumTracks(ctx, spotify.ID(input))
+		if err != nil {
+			log.Println(err.Error())
+		}
+		for _, l := range albumTracks.Tracks {
+			artistName := utils.FormatArtistsName(l.Artists)
+			spotifySearch = append(spotifySearch, [4]string{l.Name, artistName, string(l.URI), l.ID.String()})
+		}
+	}
+
+	p.SetVar("spotify_search", spotifySearch)
+	p.Command("lua require'nvim-spotify'.init()")
+}
+
 func (p *Command) Search(args []string) {
 	log.Printf("starting search...")
 	searchType := args[0]
@@ -85,36 +163,9 @@ func (p *Command) Search(args []string) {
 		log.Fatalf("Input cannot be empty")
 	}
 	input := string(b)
-
-	formatList := func(list string) [][]string {
-		var spotifySearch [][]string
-		line := strings.Split(list, "\n")
-		for _, l := range line {
-			spotifySearch = append(spotifySearch, strings.Split(l, "||"))
-		}
-		return spotifySearch
-	}
-	var searchResult string
-
-	switch searchType {
-	case "tracks":
-		searchResult, _ = utils.ExecCommand("spt", "search", "--tracks", input, "--format", "%t||%a||%u", "--limit", "20")
-	case "playlists":
-		searchResult, _ = utils.ExecCommand("spt", "search", "--playlists", input, "--format", "%p|| ||%u", "--limit", "20")
-	case "artists":
-		searchResult, _ = utils.ExecCommand("spt", "search", "--artists", input, "--format", "%a|| ||%u", "--limit", "20")
-	case "albums":
-		searchResult, _ = utils.ExecCommand("spt", "search", "--albums", input, "--format", "%b||%a||%u", "--limit", "20")
-	case "shows":
-		searchResult, _ = utils.ExecCommand("spt", "search", "--shows", input, "--format", "%h||%a||%u", "--limit", "20")
-	}
-	spotifySearch := formatList(searchResult)
-
-	p.SetVar("spotify_type", searchType)
 	p.SetVar("spotify_title", input)
 
-	p.SetVar("spotify_search", spotifySearch)
-	p.Command("lua require'nvim-spotify'.init()")
+	p.SearchFn([]string{searchType, input})
 }
 
 func (p *Command) Play(args []string) {

@@ -3,7 +3,9 @@ package command
 import (
 	"log"
 
+	"github.com/kadobot/nvim-spotify/client"
 	"github.com/neovim/go-client/nvim"
+	"github.com/zmb3/spotify/v2"
 )
 
 type Command struct {
@@ -13,13 +15,15 @@ type Command struct {
 	input  string
 	anchor *nvim.Window
 	nsID   int
+	client *spotify.Client
 }
 
 const WIDTH = 70
 const HEIGHT = 3
 
 func NewCommand(v *nvim.Nvim) *Command {
-	return &Command{Nvim: v, wins: make(map[*nvim.Window]bool)}
+	client := client.NewClient()
+	return &Command{Nvim: v, wins: make(map[*nvim.Window]bool), client: client}
 }
 
 func (p *Command) Start() {
@@ -55,4 +59,3 @@ func (p *Command) ConfigPlugin() {
 
 	p.createAnchor()
 }
-

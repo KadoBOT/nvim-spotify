@@ -6,12 +6,12 @@ local entry_display = require "telescope.pickers.entry_display"
 local conf = require("telescope.config").values
 
 local function finder_fn()
-    return function(prompt)
+    return function(_)
         local res = vim.g.spotify_search
         local results = {}
 
         for _, v in pairs(res) do
-            table.insert(results, { v[1], v[2], v[3] })
+            table.insert(results, { v[1], v[2], v[3], v[4] })
         end
 
         return results
@@ -32,12 +32,12 @@ local function entry_fn(opts)
     }
 
     local make_display = function (entry)
-        if vim.g.spotify_type == 'artists' or vim.g.spotify_type == 'playlists' then
+        if vim.g.spotify_type == 'artists' then
             return displayer {
                 { entry.track, "TelescopeResultsNumber" },
             }
         end
-        
+
         return displayer {
             { entry.track, "TelescopeResultsNumber" },
             { entry.artist, "TelescopeResultsComment" },
@@ -49,10 +49,29 @@ local function entry_fn(opts)
             artist = entry[2],
             track = entry[1],
             uri = entry[3],
+            id = entry[4],
             display = make_display,
             ordinal = entry[1] .. entry[2],
         }
     end
+end
+
+local search_fn = function (prompt_bufnr)
+    return function ()
+        actions.close(prompt_bufnr)
+        local type = vim.g.spotify_type
+        local selection = actions_state.get_selected_entry()
+
+        vim.g.spotify_title = selection.track
+        local cmd = ":call SpotifySearchFn('" .. type .. "tracks', '" .. selection.id .. "')"
+        vim.api.nvim_command(cmd)
+    end
+end
+
+local play_fn = function ()
+    local selection = actions_state.get_selected_entry()
+    local cmd = ":call SpotifyPlay('" .. selection.uri .. "')"
+    vim.api.nvim_command(cmd)
 end
 
 local spotify = function (opts)
@@ -67,10 +86,16 @@ local spotify = function (opts)
         attach_mappings = function (prompt_bufnr, map)
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
-                local selection = actions_state.get_selected_entry()
-                local cmd = ":call SpotifyPlay('" .. selection.uri .. "')"
-                vim.api.nvim_command(cmd)
             end)
+
+            map("i", "<CR>", play_fn)
+            map("n", "<CR>", play_fn)
+
+            if vim.g.spotify_type == "albums" or vim.g.spotify_type == "playlists" then
+                map("i", "<C-e>", search_fn(prompt_bufnr))
+                map("n", "<C-e>", search_fn(prompt_bufnr))
+            end
+
             return true
         end
     }):find()
@@ -88,7 +113,7 @@ local list_devices = function (opts)
                     ordinal = entry[1]
                 }
             end,
-            fn =  function(prompt)
+            fn =  function(_)
                 local res = vim.g.spotify_devices
                 local results = {}
 
@@ -100,7 +125,7 @@ local list_devices = function (opts)
             end
         }),
         sorter = conf.generic_sorter(opts),
-        attach_mappings = function (prompt_bufnr, map)
+        attach_mappings = function (prompt_bufnr, _)
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
                 local selection = actions_state.get_selected_entry()
@@ -157,6 +182,5 @@ end
 function M.status:listen()
     return M._status_line
 end
-
 
 return M

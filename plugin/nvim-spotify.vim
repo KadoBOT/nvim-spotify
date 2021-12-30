@@ -19,6 +19,7 @@ call remote#host#RegisterPlugin('nvim-spotify', '0', [
     \ {'type': 'function', 'name': 'SpotifyPlayback', 'sync': 0, 'opts': {}},
     \ {'type': 'function', 'name': 'SpotifySave', 'sync': 0, 'opts': {}},
     \ {'type': 'function', 'name': 'SpotifySearch', 'sync': 0, 'opts': {}},
+    \ {'type': 'function', 'name': 'SpotifySearchFn', 'sync': 0, 'opts': {}},
     \ ])
 
 " vim:ts=4:sw=4:et
