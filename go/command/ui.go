@@ -140,11 +140,11 @@ func (p *Command) showCurrentlyPlaying(curPlaying string) {
 
 	log.Println(playingName)
 
-	top_border := []byte("╭" + strings.Repeat("─", (WIDTH-19)/2) + " Currently Playing " + strings.Repeat("─", (WIDTH-21)/2) + "╮")
-	empty_line := []byte("│ 墳" + strings.Repeat(" ", WIDTH-5) + "│")
-	bot_border := []byte("╰" + strings.Repeat("─", WIDTH-2) + "╯")
+	topBorder := []byte("╭" + strings.Repeat("─", (WIDTH-19)/2) + " Currently Playing " + strings.Repeat("─", (WIDTH-21)/2) + "╮")
+	emptyLine := []byte("│ 墳" + strings.Repeat(" ", WIDTH-5) + "│")
+	botBorder := []byte("╰" + strings.Repeat("─", WIDTH-2) + "╯")
 
-	replacement := [][]byte{top_border, empty_line, bot_border}
+	replacement := [][]byte{topBorder, emptyLine, botBorder}
 
 	opts := nvim.WindowConfig{
 		Relative:  "win",
