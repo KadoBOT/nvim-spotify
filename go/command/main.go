@@ -10,18 +10,20 @@ type Command struct {
 	*nvim.Nvim
 	*nvim.Buffer
 	wins   map[*nvim.Window]bool
-	input  string
 	anchor *nvim.Window
-	nsID   int
 }
 
+// WIDTH of the buffers
 const WIDTH = 70
+
+// HEIGHT of the buffers
 const HEIGHT = 3
 
 func NewCommand(v *nvim.Nvim) *Command {
 	return &Command{Nvim: v, wins: make(map[*nvim.Window]bool)}
 }
 
+// Start calls all methods necessary to run the plugin
 func (p *Command) Start() {
 	p.ConfigPlugin()
 
@@ -46,6 +48,7 @@ func (p *Command) Start() {
 	p.setKeyMaps(keys)
 }
 
+// ConfigPlugin configures the plugin
 func (p *Command) ConfigPlugin() {
 	log.Printf("Configuring Plugin")
 
@@ -55,4 +58,3 @@ func (p *Command) ConfigPlugin() {
 
 	p.createAnchor()
 }
-

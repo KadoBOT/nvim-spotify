@@ -8,6 +8,7 @@ import (
 	"github.com/neovim/go-client/nvim/plugin"
 )
 
+// Register the nvim handlers
 func Register(p *plugin.Plugin) error {
 	log.Printf("Registering Plugin")
 	c := command.NewCommand(p.Nvim)

@@ -3,69 +3,18 @@ package command
 import (
 	"log"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/kadobot/nvim-spotify/utils"
-	"github.com/neovim/go-client/nvim"
 )
 
-func (p *Command) GetCurrentlyPlayingTrack() error {
+// GetCurrentlyPlayingTrack shows the currently playing track when the plugin is open
+func (p *Command) GetCurrentlyPlayingTrack() {
 	log.Println("cur playing")
 	curPlaying, ok := utils.ExecCommand("spt", "playback", "-s", "-f", "%t by %a")
 
 	if ok {
-		log.Printf("Creating CurrentlyPlaying")
-		buf, err := p.CreateBuffer(false, true)
-		if err != nil {
-			log.Fatalf(err.Error())
-			return err
-		}
-		playingName := utils.SafeString(curPlaying, WIDTH-10)
-
-		log.Println(playingName)
-
-		top_border := []byte("╭" + strings.Repeat("─", (WIDTH-19)/2) + " Currently Playing " + strings.Repeat("─", (WIDTH-21)/2) + "╮")
-		empty_line := []byte("│ 墳" + strings.Repeat(" ", WIDTH-5) + "│")
-		bot_border := []byte("╰" + strings.Repeat("─", WIDTH-2) + "╯")
-
-		replacement := [][]byte{top_border, empty_line, bot_border}
-
-		opts := nvim.WindowConfig{
-			Relative:  "win",
-			Win:       *p.anchor,
-			Width:     WIDTH,
-			Height:    HEIGHT,
-			BufPos:    [2]int{0, 0},
-			Row:       -3,
-			Col:       -2,
-			Style:     "minimal",
-			ZIndex:    1,
-			Focusable: false,
-		}
-
-		if err := p.SetBufferLines(buf, 0, -1, true, replacement); err != nil {
-			log.Fatalf(err.Error())
-			return err
-		}
-
-		p.SetBufferText(buf, 1, 7, 1, utf8.RuneCountInString(playingName)+7, [][]byte{[]byte(playingName)})
-		p.SetBufferOption(buf, "modifiable", false)
-		p.SetBufferOption(buf, "bufhidden", "wipe")
-		p.SetBufferOption(buf, "buftype", "nofile")
-
-		win, err := p.OpenWindow(buf, false, &opts)
-		if err != nil {
-			log.Fatalf(err.Error())
-			return err
-		}
-		p.wins[&win] = true
-
-		p.SetWindowOption(win, "winhl", "Normal:SpotifyBorder")
-		p.SetWindowOption(win, "winblend", 0)
-		p.SetWindowOption(win, "foldlevel", 100)
+		p.showCurrentlyPlaying(curPlaying)
 	}
-
-	return nil
 }
 
 func (p *Command) setKeyMaps(keys [][3]string) {
@@ -77,6 +26,7 @@ func (p *Command) setKeyMaps(keys [][3]string) {
 	}
 }
 
+// Search calls the Spotify API responsible for searching
 func (p *Command) Search(args []string) {
 	log.Printf("starting search...")
 	searchType := args[0]
@@ -86,14 +36,6 @@ func (p *Command) Search(args []string) {
 	}
 	input := string(b)
 
-	formatList := func(list string) [][]string {
-		var spotifySearch [][]string
-		line := strings.Split(list, "\n")
-		for _, l := range line {
-			spotifySearch = append(spotifySearch, strings.Split(l, "||"))
-		}
-		return spotifySearch
-	}
 	var searchResult string
 
 	switch searchType {
@@ -108,7 +50,12 @@ func (p *Command) Search(args []string) {
 	case "shows":
 		searchResult, _ = utils.ExecCommand("spt", "search", "--shows", input, "--format", "%h||%a||%u", "--limit", "20")
 	}
-	spotifySearch := formatList(searchResult)
+
+	var spotifySearch [][]string
+	line := strings.Split(searchResult, "\n")
+	for _, l := range line {
+		spotifySearch = append(spotifySearch, strings.Split(l, "||"))
+	}
 
 	p.SetVar("spotify_type", searchType)
 	p.SetVar("spotify_title", input)
@@ -117,6 +64,7 @@ func (p *Command) Search(args []string) {
 	p.Command("lua require'nvim-spotify'.init()")
 }
 
+// Play plays the given URI
 func (p *Command) Play(args []string) {
 	var selected []string
 	p.Var("spotify_device", &selected)
@@ -128,6 +76,7 @@ func (p *Command) Play(args []string) {
 	}
 }
 
+// Playback skips the track or pause/resume a track
 func (p *Command) Playback(args []string) {
 	switch args[0] {
 	case "next":
@@ -137,18 +86,38 @@ func (p *Command) Playback(args []string) {
 	}
 }
 
+// Save adds the currently playing track to "My Library"
 func (p *Command) Save() {
 	utils.ExecCommand("spt", "playback", "--like")
 }
 
-func (p *Command) GetDevices() ([]string, bool) {
+// ShowDevices displays the list of devices
+func (p *Command) ShowDevices(devices []string) {
 	log.Println("getting devices")
 	res, ok := utils.ExecCommand("spt", "list", "-d")
 
 	if ok {
 		devices := strings.Split(res, "\n")
-		return devices, ok
-	}
+		devicesNames := [][]string{}
+		if ok {
+			for _, dev := range devices {
+				cur := strings.SplitN(dev, " ", 2)
+				devicesNames = append(devicesNames, []string{cur[1]})
+			}
+		}
+		log.Println(devicesNames)
+		p.SetVar("spotify_devices", devicesNames)
 
-	return nil, ok
+		p.Command("lua require'nvim-spotify'.devices()")
+	}
+}
+
+// CloseWins closes all open windows
+func (p *Command) CloseWins() {
+	p.DeleteBuffer(*p.Buffer, map[string]bool{"force": true})
+	for win := range p.wins {
+		if p.wins[win] {
+			p.CloseWindow(*win, true)
+		}
+	}
 }

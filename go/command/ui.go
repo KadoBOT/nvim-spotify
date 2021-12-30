@@ -3,7 +3,9 @@ package command
 import (
 	"log"
 	"strings"
+	"unicode/utf8"
 
+	"github.com/kadobot/nvim-spotify/utils"
 	"github.com/neovim/go-client/nvim"
 )
 
@@ -128,29 +130,51 @@ func (p *Command) createInput() {
 	p.Command("autocmd BufLeave <buffer> ++nested ++once :silent call SpotifyCloseWin()")
 }
 
-func (p *Command) ShowDevices(devices []string) error {
-	devices, ok := p.GetDevices()
-
-	devicesNames := [][]string{}
-	if ok {
-		for _, dev := range devices {
-			cur := strings.SplitN(dev, " ", 2)
-			devicesNames = append(devicesNames, []string{cur[1]})
-		}
+func (p *Command) showCurrentlyPlaying(curPlaying string) {
+	log.Printf("Creating CurrentlyPlaying")
+	buf, err := p.CreateBuffer(false, true)
+	if err != nil {
+		log.Fatalf(err.Error())
 	}
-	log.Println(devicesNames)
-	p.SetVar("spotify_devices", devicesNames)
+	playingName := utils.SafeString(curPlaying, WIDTH-10)
 
-	p.Command("lua require'nvim-spotify'.devices()")
+	log.Println(playingName)
 
-	return nil
-}
+	top_border := []byte("╭" + strings.Repeat("─", (WIDTH-19)/2) + " Currently Playing " + strings.Repeat("─", (WIDTH-21)/2) + "╮")
+	empty_line := []byte("│ 墳" + strings.Repeat(" ", WIDTH-5) + "│")
+	bot_border := []byte("╰" + strings.Repeat("─", WIDTH-2) + "╯")
 
-func (p *Command) CloseWins() {
-	p.DeleteBuffer(*p.Buffer, map[string]bool{"force": true})
-	for win := range p.wins {
-		if p.wins[win] {
-			p.CloseWindow(*win, true)
-		}
+	replacement := [][]byte{top_border, empty_line, bot_border}
+
+	opts := nvim.WindowConfig{
+		Relative:  "win",
+		Win:       *p.anchor,
+		Width:     WIDTH,
+		Height:    HEIGHT,
+		BufPos:    [2]int{0, 0},
+		Row:       -3,
+		Col:       -2,
+		Style:     "minimal",
+		ZIndex:    1,
+		Focusable: false,
 	}
+
+	if err := p.SetBufferLines(buf, 0, -1, true, replacement); err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	p.SetBufferText(buf, 1, 7, 1, utf8.RuneCountInString(playingName)+7, [][]byte{[]byte(playingName)})
+	p.SetBufferOption(buf, "modifiable", false)
+	p.SetBufferOption(buf, "bufhidden", "wipe")
+	p.SetBufferOption(buf, "buftype", "nofile")
+
+	win, err := p.OpenWindow(buf, false, &opts)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	p.wins[&win] = true
+
+	p.SetWindowOption(win, "winhl", "Normal:SpotifyBorder")
+	p.SetWindowOption(win, "winblend", 0)
+	p.SetWindowOption(win, "foldlevel", 100)
 }
