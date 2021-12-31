@@ -45,6 +45,7 @@ local function entry_fn(opts)
     end
 
     return function(entry)
+        print(vim.inspect(entry))
         return {
             artist = entry[2],
             track = entry[1],
@@ -127,9 +128,10 @@ M.namespace = 'Spotify'
 function M.setup(opts)
     M.opts = vim.tbl_deep_extend("force", M.opts, opts)
 
-	vim.api.nvim_set_keymap("n", "<Plug>(SpotifySkip)", ":<c-u>call SpotifyPlayback('next')<CR>", { silent = true })
-	vim.api.nvim_set_keymap("n", "<Plug>(SpotifyPause)", ":<c-u>call SpotifyPlayback('pause')<CR>", { silent = true })
-    vim.api.nvim_set_keymap("n", "<Plug>(SpotifySave)", ":<c-u>call SpotifySave()<CR>", { silent = true })
+	vim.api.nvim_set_keymap("n", "<Plug>(SpotifySkip)", ":call SpotifyPlayback('next')<CR>", { silent = true })
+	vim.api.nvim_set_keymap("n", "<Plug>(SpotifyPause)", ":call SpotifyPlayback('pause')<CR>", { silent = true })
+    vim.api.nvim_set_keymap("n", "<Plug>(SpotifySave)", ":call SpotifySave()<CR>", { silent = true })
+	vim.api.nvim_set_keymap("n", "<Plug>(SpotifyPrev)", ":call SpotifyPlayback('prev')<CR>", { silent = true })
 end
 
 function M.init()
