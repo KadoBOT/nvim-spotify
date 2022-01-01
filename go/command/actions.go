@@ -94,7 +94,7 @@ func (p *Command) Save() {
 }
 
 // ShowDevices displays the list of devices
-func (p *Command) ShowDevices(devices []string) {
+func (p *Command) ShowDevices(_ []string) {
 	log.Println("getting devices")
 	res, ok := utils.ExecCommand("spt", "list", "-d")
 
