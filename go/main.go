@@ -1,8 +1,8 @@
 package main
 
 import (
+	"ioutil"
 	"log"
-	"os"
 
 	"github.com/kadobot/nvim-spotify/command"
 	"github.com/neovim/go-client/nvim/plugin"
@@ -27,6 +27,6 @@ func Register(p *plugin.Plugin) error {
 func main() {
 	file, _ := ioutil.TempFile("", "nvim-spotify-plugin.*.log")
 	log.SetOutput(file)
-	defer l.Close()
+	defer file.Close()
 	plugin.Main(Register)
 }
