@@ -77,7 +77,7 @@ func (p *Command) Play(args []string) {
 }
 
 // Playback skips the track or pause/resume a track
-func (p *Command) Playback(args []string) {
+func (*Command) Playback(args []string) {
 	switch args[0] {
 	case "next":
 		utils.ExecCommand("spt", "playback", "--next")
@@ -89,7 +89,7 @@ func (p *Command) Playback(args []string) {
 }
 
 // Save adds the currently playing track to "My Library"
-func (p *Command) Save() {
+func (*Command) Save() {
 	utils.ExecCommand("spt", "playback", "--like")
 }
 
