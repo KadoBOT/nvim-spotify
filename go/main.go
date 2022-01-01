@@ -25,8 +25,8 @@ func Register(p *plugin.Plugin) error {
 }
 
 func main() {
-	l, _ := os.Create("/tmp/nvim-spotify-plugin.log")
-	log.SetOutput(l)
+	file, _ := ioutil.TempFile("", "nvim-spotify-plugin.*.log")
+	log.SetOutput(file)
 	defer l.Close()
 	plugin.Main(Register)
 }
