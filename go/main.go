@@ -1,7 +1,7 @@
 package main
 
 import (
-	"ioutil"
+	"io/ioutil"
 	"log"
 
 	"github.com/kadobot/nvim-spotify/command"

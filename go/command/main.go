@@ -30,7 +30,7 @@ func (p *Command) Start() {
 	p.ConfigPlugin()
 
 	p.createPlaceholder()
-	p.GetCurrentlyPlayingTrack()
+	p.FetchCurrentlyPlayingTrack()
 	p.createInput()
 
 	keys := [][3]string{
