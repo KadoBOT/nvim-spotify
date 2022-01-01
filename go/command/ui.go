@@ -13,7 +13,7 @@ func (p *Command) createPlaceholder() error {
 	log.Printf("Creating Placeholder")
 	buf, err := p.CreateBuffer(false, true)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Println(err.Error())
 		return err
 	}
 
@@ -43,7 +43,7 @@ func (p *Command) createPlaceholder() error {
 
 	win, err := p.OpenWindow(buf, false, &opts)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Println(err.Error())
 		return err
 	}
 	p.wins[&win] = true
@@ -59,12 +59,12 @@ func (p *Command) createAnchor() {
 	log.Printf("Creating Anchor")
 	buf, err := p.CreateBuffer(false, true)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Println(err.Error())
 	}
 
 	uis, err := p.UIs()
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Println(err.Error())
 	}
 
 	opts := nvim.WindowConfig{
@@ -84,7 +84,7 @@ func (p *Command) createAnchor() {
 
 	win, err := p.OpenWindow(buf, false, &opts)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Println(err.Error())
 	}
 
 	p.anchor = &win
@@ -95,7 +95,7 @@ func (p *Command) createInput() {
 	log.Printf("Creating Input")
 	buf, err := p.CreateBuffer(false, true)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Println(err.Error())
 	}
 	p.Buffer = &buf
 
@@ -118,7 +118,7 @@ func (p *Command) createInput() {
 
 	win, err := p.OpenWindow(buf, true, &opts)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Println(err.Error())
 	}
 	p.wins[&win] = true
 
@@ -134,7 +134,7 @@ func (p *Command) showCurrentlyPlaying(curPlaying string) {
 	log.Printf("Creating CurrentlyPlaying")
 	buf, err := p.CreateBuffer(false, true)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Println(err.Error())
 	}
 	playingName := utils.SafeString(curPlaying, WIDTH-10)
 
@@ -160,7 +160,7 @@ func (p *Command) showCurrentlyPlaying(curPlaying string) {
 	}
 
 	if err := p.SetBufferLines(buf, 0, -1, true, replacement); err != nil {
-		log.Fatalf(err.Error())
+		log.Println(err.Error())
 	}
 
 	p.SetBufferText(buf, 1, 7, 1, utf8.RuneCountInString(playingName)+7, [][]byte{[]byte(playingName)})
@@ -170,7 +170,7 @@ func (p *Command) showCurrentlyPlaying(curPlaying string) {
 
 	win, err := p.OpenWindow(buf, false, &opts)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Println(err.Error())
 	}
 	p.wins[&win] = true
 

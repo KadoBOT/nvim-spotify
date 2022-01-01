@@ -7,8 +7,8 @@ import (
 	"github.com/kadobot/nvim-spotify/utils"
 )
 
-// GetCurrentlyPlayingTrack shows the currently playing track when the plugin is open
-func (p *Command) GetCurrentlyPlayingTrack() {
+// FetchCurrentlyPlayingTrack shows the currently playing track when the plugin is open
+func (p *Command) FetchCurrentlyPlayingTrack() {
 	log.Println("cur playing")
 	curPlaying, ok := utils.ExecCommand("spt", "playback", "-s", "-f", "%t by %a")
 
@@ -32,7 +32,7 @@ func (p *Command) Search(args []string) {
 	searchType := args[0]
 	b, err := p.CurrentLine()
 	if err != nil {
-		log.Fatalf("Input cannot be empty")
+		log.Println("Input cannot be empty")
 	}
 	input := string(b)
 
