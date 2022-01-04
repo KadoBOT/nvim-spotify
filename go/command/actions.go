@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/kadobot/nvim-spotify/utils"
+	"github.com/neovim/go-client/nvim"
 )
 
 // FetchCurrentlyPlayingTrack shows the currently playing track when the plugin is open
@@ -30,11 +31,15 @@ func (p *Command) setKeyMaps(keys [][3]string) {
 func (p *Command) Search(args []string) {
 	log.Printf("starting search...")
 	searchType := args[0]
-	b, err := p.CurrentLine()
-	if err != nil {
-		log.Println("Input cannot be empty")
-	}
+	b, _ := p.CurrentLine()
+
 	input := string(b)
+
+	if input == "" {
+		log.Println("Input cannot be empty")
+		p.Nvim.Echo([]nvim.TextChunk{{Text: "Please enter a search value in the input!", HLGroup: "WarningMsg"}}, true, make(map[string]interface{}))
+		return
+	}
 
 	var searchResult string
 
