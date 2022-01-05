@@ -10,12 +10,13 @@ import (
 type Command struct {
 	*nvim.Nvim
 	*nvim.Buffer
-	wins   map[*nvim.Window]bool
-	anchor *nvim.Window
+	wins        map[*nvim.Window]bool
+	anchor      *nvim.Window
+	placeholder *nvim.Buffer
 }
 
 // WIDTH of the buffers
-const WIDTH = 70
+const WIDTH = 48
 
 // HEIGHT of the buffers
 const HEIGHT = 3
@@ -40,7 +41,7 @@ func (p *Command) Start() {
 		{"n", "<C-R>", ":call SpotifySearch('artists')<CR>"},
 		{"n", "<C-L>", ":call SpotifySearch('albums')<CR>"},
 		{"n", "<C-Y>", ":call SpotifySearch('playlists')<CR>"},
-		{"i", "<CR>", "<C-O>:call SpotifySearch('tracks')<CR>"},
+		{"i", "<CR>", "<C-O>:call SpotifySearch('')<CR>"},
 		{"i", "<C-T>", "<C-O>:call SpotifySearch('tracks')<CR>"},
 		{"i", "<C-R>", "<C-O>:call SpotifySearch('artists')<CR>"},
 		{"i", "<C-L>", "<C-O>:call SpotifySearch('albums')<CR>"},

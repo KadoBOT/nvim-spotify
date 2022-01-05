@@ -33,6 +33,11 @@ func (p *Command) Search(args []string) {
 	searchType := args[0]
 	b, _ := p.CurrentLine()
 
+	if searchType != "" {
+		p.changeInputTitle(searchType)
+		return
+	}
+
 	input := string(b)
 
 	if input == "" {
@@ -41,9 +46,10 @@ func (p *Command) Search(args []string) {
 		return
 	}
 
+	p.Var("spotify_type", &searchType)
 	var searchResult string
 
-	switch searchType {
+	switch strings.ToLower(searchType) {
 	case "tracks":
 		searchResult, _ = utils.ExecCommand("spt", "search", "--tracks", input, "--format", "%t||%a||%u", "--limit", "20")
 	case "playlists":
@@ -62,10 +68,9 @@ func (p *Command) Search(args []string) {
 		spotifySearch = append(spotifySearch, strings.Split(l, "||"))
 	}
 
-	p.SetVar("spotify_type", searchType)
 	p.SetVar("spotify_title", input)
-
 	p.SetVar("spotify_search", spotifySearch)
+
 	p.Command("lua require'nvim-spotify'.init()")
 }
 

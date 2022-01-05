@@ -67,6 +67,8 @@ Besides that, those constant updates can make your computer slow.
 **So bear this in mind when changing this value.**
 
 ## Usage
+> By default, the search will look for tracks. You can switch the type of the search by pressing one of the [Keymaps Shortcuts](#default-keymaps)  
+
 `nvim-spotify` has two commands:
 
 ### Connecting to a Device
