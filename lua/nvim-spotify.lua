@@ -6,7 +6,7 @@ local entry_display = require "telescope.pickers.entry_display"
 local conf = require("telescope.config").values
 
 local function finder_fn()
-    return function(prompt)
+    return function(_)
         local res = vim.g.spotify_search
         local results = {}
 
@@ -32,12 +32,12 @@ local function entry_fn(opts)
     }
 
     local make_display = function (entry)
-        if vim.g.spotify_type == 'artists' or vim.g.spotify_type == 'playlists' then
+        if vim.g.spotify_type == 'Artists' or vim.g.spotify_type == 'Playlists' then
             return displayer {
                 { entry.track, "TelescopeResultsNumber" },
             }
         end
-        
+
         return displayer {
             { entry.track, "TelescopeResultsNumber" },
             { entry.artist, "TelescopeResultsComment" },
@@ -65,7 +65,7 @@ local spotify = function (opts)
             fn = finder_fn()
         }),
         sorter = conf.generic_sorter(opts),
-        attach_mappings = function (prompt_bufnr, map)
+        attach_mappings = function (prompt_bufnr, _)
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
                 local selection = actions_state.get_selected_entry()
@@ -89,7 +89,7 @@ local list_devices = function (opts)
                     ordinal = entry[1]
                 }
             end,
-            fn =  function(prompt)
+            fn =  function(_)
                 local res = vim.g.spotify_devices
                 local results = {}
 
@@ -101,7 +101,7 @@ local list_devices = function (opts)
             end
         }),
         sorter = conf.generic_sorter(opts),
-        attach_mappings = function (prompt_bufnr, map)
+        attach_mappings = function (prompt_bufnr, _)
             actions.select_default:replace(function()
                 actions.close(prompt_bufnr)
                 local selection = actions_state.get_selected_entry()
