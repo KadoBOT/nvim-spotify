@@ -95,6 +95,8 @@ func (*Command) Playback(args []string) {
 		utils.ExecCommand("spt", "playback", "--toggle")
 	case "prev":
 		utils.ExecCommand("spt", "playback", "--previous")
+	case "shuffle":
+		utils.ExecCommand("spt", "playback", "--shuffle")
 	}
 }
 

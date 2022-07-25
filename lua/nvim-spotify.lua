@@ -132,6 +132,7 @@ function M.setup(opts)
 	vim.api.nvim_set_keymap("n", "<Plug>(SpotifyPause)", ":call SpotifyPlayback('pause')<CR>", { silent = true })
     vim.api.nvim_set_keymap("n", "<Plug>(SpotifySave)", ":call SpotifySave()<CR>", { silent = true })
 	vim.api.nvim_set_keymap("n", "<Plug>(SpotifyPrev)", ":call SpotifyPlayback('prev')<CR>", { silent = true })
+	vim.api.nvim_set_keymap("n", "<Plug>(SpotifyShuffle)", ":call SpotifyPlayback('shuffle')<CR>", { silent = true })
 end
 
 function M.init()
