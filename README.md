@@ -39,7 +39,7 @@ For productivity addicts who enjoy coding while listening to Spotify, and cannot
 ```lua
 -- Lua
 use {
-    'KadoBOT/nvim-spotify', 
+    'KadoBOT/nvim-spotify',
     requires = 'nvim-telescope/telescope.nvim',
     config = function()
         local spotify = require'nvim-spotify'
